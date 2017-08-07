@@ -4,8 +4,10 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -28,7 +30,14 @@ public class PaintDriver {
     frame = new JFrame("Paint");
     frame.setSize(1000, 800);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    URL iconURL = getClass().getResource("resources/icon.png");
+    if( iconURL != null ) {
+      ImageIcon icon = new ImageIcon(iconURL);
+      frame.setIconImage(icon.getImage());
+    }
     frame.setVisible(true);
+    
     
     imagePanel = new ImagePanel(new BufferedImage(100, 100, BufferedImage.TYPE_4BYTE_ABGR));
     frame.add(imagePanel, BorderLayout.CENTER);
