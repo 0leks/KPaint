@@ -44,6 +44,7 @@ public class PaintDriver {
         imagePanel.setMode(fillSelect.getSelectedIndex());
       }
     });
+    fillSelect.setSelectedIndex(0);
     controlPanel = new JPanel();
     controlPanel.add(fillSelect);
     

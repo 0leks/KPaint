@@ -38,7 +38,7 @@ public class ImagePanel extends JPanel {
     }
   }
   public enum Mode {
-    FILL_SELECT("Fill Select"), NONE("None");
+    FILL_SELECT("Fill Select"), SINGLE_SELECT("Single Select"), NONE("None");
     private String name;
     Mode(String name) {
       this.name = name;
@@ -48,7 +48,7 @@ public class ImagePanel extends JPanel {
       return name;
     }
   }
-  private Mode currentMode = Mode.NONE;
+  private Mode currentMode;
   
   private void setScale(double scale) {
     this.scale = scale;
@@ -98,6 +98,18 @@ public class ImagePanel extends JPanel {
                 deselectAll();
               }
               fillSelect(pixelX, pixelY, setTo);
+            }
+          }
+          else if(currentMode == Mode.SINGLE_SELECT) {
+            int pixelX = (int) ((e.getX() - xOffset) / pixelSize);
+            int pixelY = (int) ((e.getY() - yOffset) / pixelSize);
+            System.err.println(pixelX + "," + pixelY);
+            if( pixelX >= 0 && pixelX < current.getWidth() && pixelY >= 0 && pixelY < current.getHeight() ) {
+              boolean setTo = !selected[pixelX][pixelY];
+              if( !e.isShiftDown() ) {
+                deselectAll();
+              }
+              selected[pixelX][pixelY] = setTo;
             }
           }
         }
@@ -207,19 +219,20 @@ public class ImagePanel extends JPanel {
     }
     for( int x = 0; x < current.getWidth(); x++ ) {
       for( int y = 0; y < current.getHeight(); y++ ) {
-        Color c = new Color(current.getRGB(x, y), true);
-//        c = new Color(c.getRed(), c.getGreen(), c.getBlue(), );
-        g.setColor(c);
         int drawX = xOffset + x * pixelSize;  
         int drawY = yOffset + y * pixelSize;
-        g.fillRect(drawX + 1, drawY + 1, pixelSize-2, pixelSize-2);
-        if( selected[x][y] ) {
-          g.setColor(new Color(255, 0, 0, 150));
-          Graphics2D g2d = (Graphics2D)g;
-          g2d.setStroke(new BasicStroke(3));
-          g.drawLine(drawX, drawY, drawX + pixelSize, drawY + pixelSize);
-          g.drawLine(drawX + pixelSize, drawY, drawX, drawY + pixelSize);
-//          g.drawRect(drawX, drawY, pixelSize-1, pixelSize-1);
+        if( drawX >= -pixelSize && drawX < getWidth() + pixelSize && drawY > -pixelSize && drawY < getHeight() + pixelSize ) {
+          Color c = new Color(current.getRGB(x, y), true);
+  //        c = new Color(c.getRed(), c.getGreen(), c.getBlue(), );
+          g.setColor(c);
+          g.fillRect(drawX, drawY, pixelSize, pixelSize);
+          if( selected[x][y] ) {
+            g.setColor(new Color(255, 0, 0, 150));
+            Graphics2D g2d = (Graphics2D)g;
+            g.drawLine(drawX, drawY, drawX + pixelSize, drawY + pixelSize);
+            g.drawLine(drawX + pixelSize, drawY, drawX, drawY + pixelSize);
+  //          g.drawRect(drawX, drawY, pixelSize-1, pixelSize-1);
+          }
         }
       }
     }
