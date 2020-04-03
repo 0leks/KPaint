@@ -46,7 +46,8 @@ public class PaintDriver {
     for( int i = 0; i < options.length; i++ ) {
       options[i] = ImagePanel.Mode.values()[i].toString();
     }
-    fillSelect = new JComboBox(options);
+    fillSelect = new JComboBox<String>(options);
+    fillSelect.setFocusable(false);
     fillSelect.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
@@ -58,6 +59,7 @@ public class PaintDriver {
     controlPanel.add(fillSelect);
     
     setTransparent = new JButton("Set Transparent");
+    setTransparent.setFocusable(false);
     setTransparent.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
@@ -67,6 +69,7 @@ public class PaintDriver {
     controlPanel.add(setTransparent);
     
     openFile = new JButton("Open File");
+    openFile.setFocusable(false);
     openFile.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent arg0) {
@@ -83,6 +86,7 @@ public class PaintDriver {
     controlPanel.add(openFile);
     
     saveFile = new JButton("Save File");
+    saveFile.setFocusable(false);
     saveFile.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
@@ -106,6 +110,7 @@ public class PaintDriver {
     frame.add(controlPanel, BorderLayout.NORTH );
     frame.validate();
     frame.repaint();
+    imagePanel.requestFocus();
   }
   
   public static BufferedImage loadImage(String fileName) {

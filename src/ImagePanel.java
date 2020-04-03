@@ -1,15 +1,14 @@
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
+import java.awt.Point;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.LinkedList;
-import java.util.List;
 
 import javax.swing.JPanel;
 
@@ -19,11 +18,12 @@ public class ImagePanel extends JPanel {
   private BufferedImage original;
   private BufferedImage current;
   private double scale;
-  private int pixelSize;
+  private double pixelSize;
   private int xOffset;
   private int yOffset;
   private int xStart;
   private int yStart;
+  private Point mousePosition = new Point(0,0);
   private boolean movingImage;
   
   private boolean[][] selected;
@@ -38,7 +38,7 @@ public class ImagePanel extends JPanel {
     }
   }
   public enum Mode {
-    FILL_SELECT("Fill Select"), SINGLE_SELECT("Single Select"), NONE("None");
+	  COLOR_SELECT("Color Select"), FILL_SELECT("Fill Select"), SINGLE_SELECT("Single Select"), NONE("None");
     private String name;
     Mode(String name) {
       this.name = name;
@@ -52,7 +52,7 @@ public class ImagePanel extends JPanel {
   
   private void setScale(double scale) {
     this.scale = scale;
-    pixelSize = (int) (20 * this.scale);
+    pixelSize = 20 * this.scale;
   }
   public ImagePanel(BufferedImage image) {
     setScale(1);
@@ -69,26 +69,44 @@ public class ImagePanel extends JPanel {
         repaint();
       }
     });
-    this.addMouseListener(new MouseListener() {
+    this.addKeyListener(new KeyAdapter() {
       @Override
-      public void mouseClicked(MouseEvent arg0) {
-        // TODO Auto-generated method stub
-        
+      public void keyReleased(KeyEvent e) {
+        if( e.getKeyCode() == KeyEvent.VK_SPACE ) {
+          int mouseX = (int)((mousePosition.x - xOffset)/pixelSize);
+          int mouseY = (int)((mousePosition.y - yOffset)/pixelSize);
+          if( mouseX >= 0 && mouseX < current.getWidth() && mouseY >= 0 && mouseY < current.getHeight() ) {
+            Color color = new Color(current.getRGB(mouseX, mouseY));
+            String s = color.getRed() + ", " + color.getGreen() + ", " + color.getBlue();
+            File file = new File("pixelColors.txt");
+            try {
+              PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file, true)));
+              pw.println(s);
+              pw.close();
+            } catch (IOException e1) {
+              e1.printStackTrace();
+            }
+          }
+        }
       }
-      @Override
-      public void mouseEntered(MouseEvent arg0) {
-        // TODO Auto-generated method stub
-        
-      }
-      @Override
-      public void mouseExited(MouseEvent arg0) {
-        // TODO Auto-generated method stub
-        
-      }
+    });
+    this.addMouseListener(new MouseAdapter() {
       @Override
       public void mousePressed(MouseEvent e) {
         if (e.getButton() == MouseEvent.BUTTON1) {
-          if (currentMode == Mode.FILL_SELECT) {
+        if (currentMode == Mode.COLOR_SELECT) {
+            int pixelX = (int) ((e.getX() - xOffset) / pixelSize);
+            int pixelY = (int) ((e.getY() - yOffset) / pixelSize);
+            System.err.println(pixelX + "," + pixelY);
+            if( pixelX >= 0 && pixelX < current.getWidth() && pixelY >= 0 && pixelY < current.getHeight() ) {
+              boolean setTo = !selected[pixelX][pixelY];
+              if( !e.isShiftDown() ) {
+                deselectAll();
+              }
+              colorSelect(pixelX, pixelY, setTo);
+            }
+          }
+        else if (currentMode == Mode.FILL_SELECT) {
             int pixelX = (int) ((e.getX() - xOffset) / pixelSize);
             int pixelY = (int) ((e.getY() - yOffset) / pixelSize);
             System.err.println(pixelX + "," + pixelY);
@@ -130,6 +148,7 @@ public class ImagePanel extends JPanel {
     this.addMouseMotionListener(new MouseMotionListener() {
       @Override
       public void mouseDragged(MouseEvent e) {
+        mousePosition = e.getPoint();
         if( movingImage ) {
           int deltaX = e.getX() - xStart;
           int deltaY = e.getY() - yStart;
@@ -142,7 +161,8 @@ public class ImagePanel extends JPanel {
       }
       @Override
       public void mouseMoved(MouseEvent e) {
-        
+        mousePosition = e.getPoint();
+        repaint();
       }
     });
   }
@@ -172,7 +192,19 @@ public class ImagePanel extends JPanel {
   public void deselectAll() {
     selected = new boolean[selected.length][selected[0].length];
   }
-  
+
+  private void colorSelect(int x, int y, boolean setTo) {
+    int originalRGB = current.getRGB(x, y);
+    for(int i = 0; i < current.getWidth(); i++) {
+    	for(int j = 0; j < current.getHeight(); j++) {
+    	    int rgb = current.getRGB(i, j);
+    	    if(rgb == originalRGB) {
+    	        selected[i][j] = setTo;
+    	    }
+    	}
+    }
+    repaint();
+  }
   private void fillSelect(int x, int y, boolean setTo) {
     Pixel start = new Pixel(x, y);
     LinkedList<Pixel> search = new LinkedList<Pixel>();
@@ -219,23 +251,32 @@ public class ImagePanel extends JPanel {
     }
     for( int x = 0; x < current.getWidth(); x++ ) {
       for( int y = 0; y < current.getHeight(); y++ ) {
-        int drawX = xOffset + x * pixelSize;  
-        int drawY = yOffset + y * pixelSize;
+        int drawX = (int)(xOffset + x * pixelSize);  
+        int drawY = (int)(yOffset + y * pixelSize);
         if( drawX >= -pixelSize && drawX < getWidth() + pixelSize && drawY > -pixelSize && drawY < getHeight() + pixelSize ) {
           Color c = new Color(current.getRGB(x, y), true);
-  //        c = new Color(c.getRed(), c.getGreen(), c.getBlue(), );
           g.setColor(c);
-          g.fillRect(drawX, drawY, pixelSize, pixelSize);
+          int drawSize = Math.max((int)pixelSize, 1);
+          g.fillRect(drawX, drawY, drawSize, drawSize);
           if( selected[x][y] ) {
             g.setColor(new Color(255, 0, 0, 150));
-            Graphics2D g2d = (Graphics2D)g;
-            g.drawLine(drawX, drawY, drawX + pixelSize, drawY + pixelSize);
-            g.drawLine(drawX + pixelSize, drawY, drawX, drawY + pixelSize);
+            g.drawLine(drawX, drawY, drawX + drawSize, drawY + drawSize);
+            g.drawLine(drawX + drawSize, drawY, drawX, drawY + drawSize);
   //          g.drawRect(drawX, drawY, pixelSize-1, pixelSize-1);
           }
         }
       }
     }
+    int mouseX = (int)((mousePosition.x - xOffset)/pixelSize);
+    int mouseY = (int)((mousePosition.y - yOffset)/pixelSize);
+    if( mouseX >= 0 && mouseX < current.getWidth() && mouseY >= 0 && mouseY < current.getHeight() ) {
+      Color color = new Color(current.getRGB(mouseX, mouseY));
+      g.setColor(Color.BLACK);
+      g.drawString(color.getRed() + ", " + color.getGreen() + ", " + color.getBlue(), 3, 16);
+      g.setColor(Color.YELLOW);
+      g.drawString(color.getRed() + ", " + color.getGreen() + ", " + color.getBlue(), 2, 15);
+    }
+    
   }
   
   public static BufferedImage copyImage(BufferedImage image) {
