@@ -2,17 +2,11 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 
 import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 public class PaintDriver {
   private JFrame frame;
@@ -27,7 +21,12 @@ public class PaintDriver {
   final JFileChooser fc = new JFileChooser(System.getProperty("user.dir"));
   
   public PaintDriver() {
-    frame = new JFrame("Paint");
+	try {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+    }catch(Exception ex) {
+        ex.printStackTrace();
+    }
+    frame = new JFrame("Transparent Paint");
     frame.setSize(1000, 800);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -76,10 +75,7 @@ public class PaintDriver {
         int returnVal = fc.showOpenDialog(frame);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
-            BufferedImage image = loadImage(file.getAbsolutePath());
-            if( image != null ) {
-              imagePanel.setImage(image);
-            }
+            openImage(file.getAbsolutePath());
         }
       }
     });
@@ -113,10 +109,18 @@ public class PaintDriver {
     imagePanel.requestFocus();
   }
   
-  public static BufferedImage loadImage(String fileName) {
+  private void openImage(String path) {
+      BufferedImage image = loadImage(path);
+      if( image != null ) {
+        imagePanel.setImage(image);
+      }
+  }
+  
+  public BufferedImage loadImage(String fileName) {
     File file = new File(fileName);
     try {
       BufferedImage read = ImageIO.read(file);
+	  fc.setCurrentDirectory(file.getParentFile());
       return read;
     } catch (IOException e) {
       System.err.println("File name = " + fileName);
@@ -126,7 +130,10 @@ public class PaintDriver {
   }
   
   public static void main(String[] args) {
-    new PaintDriver();
+	PaintDriver p = new PaintDriver();
+	if(args.length > 0) {
+		p.openImage(args[0]);
+	}
   }
 
 }
