@@ -25,6 +25,7 @@ public class ImagePanel extends JPanel {
 	private int yStart;
 	private Point mousePosition = new Point(0, 0);
 	private boolean movingImage;
+	private int mouseButtonDown;
 
 	private boolean[][] selected;
 
@@ -33,6 +34,9 @@ public class ImagePanel extends JPanel {
 	
 	private boolean mouseDown;
 	private boolean setToWhileMouseDown;
+	
+	private Color color1;
+	private Color color2;
 
 	public class Pixel {
 		private int x;
@@ -42,6 +46,21 @@ public class ImagePanel extends JPanel {
 			this.x = x;
 			this.y = y;
 		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if(other instanceof Pixel) {
+				Pixel pixel = (Pixel)other;
+				return this.x == pixel.x && this.y == pixel.y;
+			}
+			return false;
+		}
+
+		@Override
+		public int hashCode() {
+			return (x + "," + y).hashCode();
+		}
+		
 	}
 
 	public enum Mode {
@@ -58,8 +77,15 @@ public class ImagePanel extends JPanel {
 
 	private Mode currentMode;
 
-	public ImagePanel(BufferedImage image) {
-		this.setImage(image);
+	public ImagePanel() {
+		color1 = Color.black;
+		color2 = Color.white;
+		BufferedImage defaultImage = new BufferedImage(300, 300, BufferedImage.TYPE_3BYTE_BGR);
+		Graphics g = defaultImage.getGraphics();
+		g.setColor(Color.white);
+		g.fillRect(0, 0, defaultImage.getWidth(), defaultImage.getHeight());
+		g.dispose();
+		this.setImage(defaultImage);
 		this.addMouseWheelListener(new MouseWheelListener() {
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
@@ -105,19 +131,23 @@ public class ImagePanel extends JPanel {
 		this.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				if (e.getButton() == MouseEvent.BUTTON1) {
-					selectAction(getPixelPosition(), e.isShiftDown());
-				}
-				else {
+				mouseButtonDown = e.getButton();
+				if(mouseButtonDown == MouseEvent.BUTTON2) {
 					movingImage = true;
 					xStart = e.getX();
 					yStart = e.getY();
+				}
+				else {
+					selectAction(getPixelPosition(), e.isShiftDown());
 				}
 				repaint();
 			}
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
+				if(e.getButton() == mouseButtonDown) {
+					mouseButtonDown = 0;
+				}
 				mouseDown = false;
 				if (e.getButton() == MouseEvent.BUTTON2) {
 					movingImage = false;
@@ -152,13 +182,9 @@ public class ImagePanel extends JPanel {
 	
 	public void selectAction(Point pixel, boolean shiftDown) {
 		if (pixel.x >= 0 && pixel.x < current.getWidth() && pixel.y >= 0 && pixel.y < current.getHeight()) {
-			boolean setTo = !selected[pixel.x][pixel.y];
-			if(mouseDown) {
-				setTo = setToWhileMouseDown;
-			}
-			else {
-				setToWhileMouseDown = setTo;
-				mouseDown = true;
+			Color setTo = color1;
+			if(mouseButtonDown == MouseEvent.BUTTON3) {
+				setTo = color2;
 			}
 			
 			if (!shiftDown) {
@@ -172,16 +198,17 @@ public class ImagePanel extends JPanel {
 			upperBound.x = Math.min(upperBound.x, current.getWidth()-1);
 			upperBound.y = Math.min(upperBound.y, current.getHeight()-1);
 
-			if (currentMode == Mode.COLOR_SELECT) {
-				colorSelect(lowerBound, upperBound, setTo);
-			} 
-			else if (currentMode == Mode.FILL_SELECT) {
-				fillSelect(lowerBound, upperBound, setTo);
+//			if (currentMode == Mode.COLOR_SELECT) {
+//				colorSelect(lowerBound, upperBound, setTo);
+//			} 
+//			else 
+			if (currentMode == Mode.FILL_SELECT) {
+				fill(lowerBound, upperBound, setTo);
 			}
 			else if (currentMode == Mode.SINGLE_SELECT) {
 				for(int i = lowerBound.x; i <= upperBound.x; i++) {
 					for(int j = lowerBound.y; j <= upperBound.y; j++) {
-						setSelected(i, j, setTo);
+						current.setRGB(i, j, setTo.getRGB());
 					}
 				}
 				repaint();
@@ -227,6 +254,53 @@ public class ImagePanel extends JPanel {
 		selected = new boolean[selected.length][selected[0].length];
 		selectionOverlay = new BufferedImage(original.getWidth(), original.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
 	}
+	
+	private void setSelected(int x, int y, boolean active) {
+		selected[x][y] = active;
+		if(selected[x][y]) {
+			selectionOverlay.setRGB(x, y, Color.red.getRGB());
+		}
+		else {
+			selectionOverlay.setRGB(x, y, new Color(0, 0, 0, 0).getRGB());
+		}
+	}
+	
+	private LinkedList<Pixel> getNeighbors(Pixel pixel) {
+		LinkedList<Pixel> neighbors = new LinkedList<>();
+		neighbors.add(new Pixel(pixel.x - 1, pixel.y));
+		neighbors.add(new Pixel(pixel.x + 1, pixel.y));
+		neighbors.add(new Pixel(pixel.x, pixel.y - 1));
+		neighbors.add(new Pixel(pixel.x, pixel.y + 1));
+		return neighbors;
+	}
+	
+	private void fill(Point lowerBound, Point upperBound, Color setTo) {
+		HashSet<Integer> colors = new HashSet<>();
+		HashSet<Pixel> visited = new HashSet<>();
+		LinkedList<Pixel> search = new LinkedList<Pixel>();
+		for(int i = lowerBound.x; i <= upperBound.x; i++) {
+			for(int j = lowerBound.y; j <= upperBound.y; j++) {
+				Pixel start = new Pixel(i, j);
+				search.add(start);
+				colors.add(current.getRGB(i, j));
+				visited.add(start);
+			}
+		}
+		while (!search.isEmpty()) {
+			Pixel pixel = search.removeFirst();
+			current.setRGB(pixel.x, pixel.y, setTo.getRGB());
+//			setSelected(pixel.x, pixel.y, setTo);
+			for(Pixel neighbor : getNeighbors(pixel)) {
+				if(!visited.contains(neighbor) && neighbor.x >= 0 && neighbor.y >= 0 && neighbor.x < selected.length && neighbor.y < selected[0].length) {
+					visited.add(neighbor);
+					if (colors.contains(current.getRGB(neighbor.x, neighbor.y))) {
+						search.add(neighbor);
+					}
+				}
+			}
+		}
+		repaint();
+	}
 
 	private void colorSelect(Point lowerBound, Point upperBound, boolean setTo) {
 		HashSet<Integer> colors = new HashSet<>();
@@ -245,53 +319,6 @@ public class ImagePanel extends JPanel {
 		}
 		repaint();
 	}
-	
-	private void setSelected(int x, int y, boolean active) {
-		selected[x][y] = active;
-		if(selected[x][y]) {
-			selectionOverlay.setRGB(x, y, Color.red.getRGB());
-		}
-		else {
-			selectionOverlay.setRGB(x, y, new Color(0, 0, 0, 0).getRGB());
-		}
-	}
-
-	private void fillSelect(Point lowerBound, Point upperBound, boolean setTo) {
-		HashSet<Integer> colors = new HashSet<>();
-		LinkedList<Pixel> search = new LinkedList<Pixel>();
-		for(int i = lowerBound.x; i <= upperBound.x; i++) {
-			for(int j = lowerBound.y; j <= upperBound.y; j++) {
-				Pixel start = new Pixel(i, j);
-				search.add(start);
-				colors.add(current.getRGB(i, j));
-			}
-		}
-		while (!search.isEmpty()) {
-			Pixel pixel = search.removeFirst();
-			setSelected(pixel.x, pixel.y, setTo);
-			if (pixel.x > 0 && setTo != selected[pixel.x - 1][pixel.y]) {
-				if (colors.contains(current.getRGB(pixel.x - 1, pixel.y))) {
-					search.add(0, new Pixel(pixel.x - 1, pixel.y));
-				}
-			}
-			if (pixel.x < selected.length - 1 && setTo != selected[pixel.x + 1][pixel.y]) {
-				if (colors.contains(current.getRGB(pixel.x + 1, pixel.y))) {
-					search.add(0, new Pixel(pixel.x + 1, pixel.y));
-				}
-			}
-			if (pixel.y > 0 && setTo != selected[pixel.x][pixel.y - 1]) {
-				if (colors.contains(current.getRGB(pixel.x, pixel.y - 1))) {
-					search.add(0, new Pixel(pixel.x, pixel.y - 1));
-				}
-			}
-			if (pixel.y < selected[0].length - 1 && setTo != selected[pixel.x][pixel.y + 1]) {
-				if (colors.contains(current.getRGB(pixel.x, pixel.y + 1))) {
-					search.add(0, new Pixel(pixel.x, pixel.y + 1));
-				}
-			}
-		}
-		repaint();
-	}
 
 	public void setMode(int modeIndex) {
 		currentMode = Mode.values()[modeIndex];
@@ -299,6 +326,19 @@ public class ImagePanel extends JPanel {
 	public void setBrushSize(int brushSize) {
 		this.brushSize = brushSize;
 		repaint();
+	}
+	
+	public void setColor1(Color color1) {
+		this.color1 = color1;
+	}
+	public void setColor2(Color color2) {
+		this.color2 = color2;
+	}
+	public Color getColor1() {
+		return color1;
+	}
+	public Color getColor2() {
+		return color2;
 	}
 
 	@Override
@@ -329,6 +369,11 @@ public class ImagePanel extends JPanel {
 			g.drawString(pixelPosition.x + "," + pixelPosition.y, 10, getHeight() - 30);
 			g.drawString(mousePosition.x + "," + mousePosition.y, 10, getHeight() - 10);
 		}
+		
+		g.setColor(color1);
+		g.fillRect(5, 5, 20, 20);
+		g.setColor(color2);
+		g.fillRect(30, 5, 20, 20);
 	}
 
 	public static BufferedImage copyImage(BufferedImage image) {

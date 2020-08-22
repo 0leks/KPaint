@@ -34,6 +34,42 @@ public class PaintDriver {
 			icon = ii.getImage();
 		}
 	}
+	
+	public static final Font main = new Font("Cooper Black", Font.PLAIN, 14);
+	
+	public static Color getBestTextColor(Color c) {
+		return new Color(255 - c.getRed(), 255 - c.getGreen(), 255 - c.getBlue());
+	}
+	
+	public JButton setupColorButton(String text, HasColor c) {
+		JButton color2 = new JButton(text) {
+			@Override
+			public void paintComponent(Graphics g) {
+				g.setColor(c.getColor());
+				g.fillRect(0, 0, getWidth(), getHeight());
+//				g.fillRect(2, 2, getWidth() - 4, 10);
+//				g.fillRect(2, getHeight() - 12, getWidth() - 4, 10);
+				setForeground(Color.white);
+				g.setFont(main);
+				setForeground(getBestTextColor(c.getColor()));
+				super.paintComponent(g);
+			}
+		};
+		color2.setOpaque(false);
+		color2.setContentAreaFilled(false);
+		color2.setPreferredSize(new Dimension(80, 40));
+		color2.setFocusable(false);
+		color2.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Color newColor = JColorChooser.showDialog(null, "Choose Color", c.getColor());
+				if(newColor != null) {
+					c.setColor(newColor);
+				}
+			}
+		});
+		return color2;
+	}
 
 	public PaintDriver() {
 		try {
@@ -54,7 +90,7 @@ public class PaintDriver {
 		}
 		frame.setVisible(true);
 
-		imagePanel = new ImagePanel(new BufferedImage(100, 100, BufferedImage.TYPE_4BYTE_ABGR));
+		imagePanel = new ImagePanel();
 		frame.add(imagePanel, BorderLayout.CENTER);
 
 		int min = 1;
@@ -94,6 +130,30 @@ public class PaintDriver {
 		controlPanel = new JPanel();
 		controlPanel.add(fillSelect);
 		controlPanel.add(brushSize);
+		
+		JButton color1 = setupColorButton("Left", new HasColor() {
+			@Override
+			public Color getColor() {
+				return imagePanel.getColor1();
+			}
+			@Override
+			public void setColor(Color color) {
+				imagePanel.setColor1(color);
+			}
+		});
+		controlPanel.add(color1);
+		
+		JButton color2 = setupColorButton("Right", new HasColor() {
+			@Override
+			public Color getColor() {
+				return imagePanel.getColor2();
+			}
+			@Override
+			public void setColor(Color color) {
+				imagePanel.setColor2(color);
+			}
+		});
+		controlPanel.add(color2);
 
 		setTransparent = new JButton("Set Transparent");
 		setTransparent.setFocusable(false);
@@ -143,8 +203,10 @@ public class PaintDriver {
 
 		frame.add(controlPanel, BorderLayout.NORTH);
 		frame.validate();
+		imagePanel.setImage(imagePanel.getCurrentImage());
 		frame.repaint();
 		imagePanel.requestFocus();
+		
 	}
 
 	private void openImage(String path) {
