@@ -1,8 +1,7 @@
 package ok;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
@@ -12,11 +11,14 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.*;
 
+import ok.ImagePanel.*;
+
 public class PaintDriver {
+	public static final Font MAIN_FONT = new Font("Cooper Black", Font.PLAIN, 14);
 	public static final boolean DEBUG = false;
 	private JFrame frame;
 	private ImagePanel imagePanel;
-	private JComboBox fillSelect;
+//	private JComboBox fillSelect;
 	private JButton setTransparent;
 	private JButton openFile;
 	private JButton saveFile;
@@ -35,7 +37,6 @@ public class PaintDriver {
 		}
 	}
 	
-	public static final Font main = new Font("Cooper Black", Font.PLAIN, 14);
 	
 	public static Color getBestTextColor(Color c) {
 		return new Color(255 - c.getRed(), 255 - c.getGreen(), 255 - c.getBlue());
@@ -50,7 +51,7 @@ public class PaintDriver {
 //				g.fillRect(2, 2, getWidth() - 4, 10);
 //				g.fillRect(2, getHeight() - 12, getWidth() - 4, 10);
 				setForeground(Color.white);
-				g.setFont(main);
+				g.setFont(MAIN_FONT);
 				setForeground(getBestTextColor(c.getColor()));
 				super.paintComponent(g);
 			}
@@ -70,6 +71,19 @@ public class PaintDriver {
 		});
 		return color2;
 	}
+	
+	public static final ImageIcon loadImageIconResource(String location) {
+		URL iconURL = PaintDriver.class.getResource(location);
+		if (iconURL != null) {
+			return new ImageIcon(iconURL);
+		}
+		return null;
+	}
+	public static final ImageIcon resizeImageIcon(ImageIcon icon, int width, int height) {
+		Image image = icon.getImage(); // transform it 
+		Image newimg = image.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH); // scale it the smooth way  
+		return new ImageIcon(newimg);  // transform it back
+	}
 
 	public PaintDriver() {
 		try {
@@ -83,19 +97,15 @@ public class PaintDriver {
 		frame.setIconImage(icon);
 		frame.setLocationRelativeTo(null);
 
-		URL iconURL = getClass().getResource("resources/icon.png");
-		if (iconURL != null) {
-			ImageIcon icon = new ImageIcon(iconURL);
-			frame.setIconImage(icon.getImage());
-		}
+		frame.setIconImage(loadImageIconResource("resources/icon.png").getImage());
 		frame.setVisible(true);
 
 		imagePanel = new ImagePanel();
 		frame.add(imagePanel, BorderLayout.CENTER);
 
 		int min = 1;
-		int max = 10;
-		int spacing = 1;
+		int max = 20;
+		int spacing = 5;
 		JSlider brushSize = new JSlider(JSlider.HORIZONTAL, min, max, 1);
 		Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
 		for (int i = min; i <= max; i += spacing) {
@@ -118,17 +128,29 @@ public class PaintDriver {
 		for (int i = 0; i < options.length; i++) {
 			options[i] = ImagePanel.Mode.values()[i].toString();
 		}
-		fillSelect = new JComboBox<String>(options);
-		fillSelect.setFocusable(false);
-		fillSelect.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				imagePanel.setMode(fillSelect.getSelectedIndex());
-			}
-		});
-		fillSelect.setSelectedIndex(0);
 		controlPanel = new JPanel();
-		controlPanel.add(fillSelect);
+		ButtonGroup group = new ButtonGroup();
+		for(Mode mode : ImagePanel.Mode.values()) {
+			KRadioButton modeButton = new KRadioButton(mode.toString());
+			modeButton.setIcon(mode.getImageIcon());
+			modeButton.setBorder(BorderFactory.createLineBorder(Color.black, 1));
+			modeButton.setBorderPainted(true);
+//			modeButton.setBackground(Color.black);
+			modeButton.setFocusable(false);
+			modeButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					imagePanel.setMode(mode);
+				}
+			});
+			controlPanel.add(modeButton);
+			group.add(modeButton);
+			if(mode == Mode.BRUSH) {
+				modeButton.setSelected(true);
+				imagePanel.setMode(mode);
+			}
+		}
+		
 		controlPanel.add(brushSize);
 		
 		JButton color1 = setupColorButton("Left", new HasColor() {
@@ -154,16 +176,6 @@ public class PaintDriver {
 			}
 		});
 		controlPanel.add(color2);
-
-		setTransparent = new JButton("Set Transparent");
-		setTransparent.setFocusable(false);
-		setTransparent.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				imagePanel.setTransparent();
-			}
-		});
-		controlPanel.add(setTransparent);
 
 		openFile = new JButton("Open File");
 		openFile.setFocusable(false);
@@ -203,10 +215,9 @@ public class PaintDriver {
 
 		frame.add(controlPanel, BorderLayout.NORTH);
 		frame.validate();
-		imagePanel.setImage(imagePanel.getCurrentImage());
+		imagePanel.resetView();
 		frame.repaint();
 		imagePanel.requestFocus();
-		
 	}
 
 	private void openImage(String path) {

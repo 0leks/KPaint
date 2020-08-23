@@ -1,7 +1,5 @@
 package ok;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Point;
+import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
@@ -11,11 +9,47 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 
-import javax.swing.JPanel;
+import javax.swing.*;
 
 public class ImagePanel extends JPanel {
 
-	private static final long serialVersionUID = 1L;
+	public enum Mode {
+		BRUSH("Brush", "resources/brush.png"), FILL("Fill", "resources/fill.png"), COLOR_SELECT("Matching Color", "resources/color.png");
+		private String name;
+		private ImageIcon image;
+		Mode(String name, String imageLocation) {
+			this.name = name;
+			this.image = PaintDriver.resizeImageIcon(PaintDriver.loadImageIconResource(imageLocation), 32, 32);
+		}
+		public ImageIcon getImageIcon() {
+			return image;
+		}
+		@Override
+		public String toString() {
+			return name;
+		}
+	}
+	public class Pixel {
+		private int x;
+		private int y;
+		public Pixel(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+		@Override
+		public boolean equals(Object other) {
+			if(other instanceof Pixel) {
+				Pixel pixel = (Pixel)other;
+				return this.x == pixel.x && this.y == pixel.y;
+			}
+			return false;
+		}
+		@Override
+		public int hashCode() {
+			return (x + "," + y).hashCode();
+		}
+	}
+
 	private BufferedImage original;
 	private BufferedImage current;
 	private BufferedImage selectionOverlay;
@@ -32,60 +66,33 @@ public class ImagePanel extends JPanel {
 	private double pixelSize = 1;
 	private int brushSize;
 	
-	private boolean mouseDown;
-	private boolean setToWhileMouseDown;
-	
 	private Color color1;
 	private Color color2;
 
-	public class Pixel {
-		private int x;
-		private int y;
-
-		public Pixel(int x, int y) {
-			this.x = x;
-			this.y = y;
-		}
-		
-		@Override
-		public boolean equals(Object other) {
-			if(other instanceof Pixel) {
-				Pixel pixel = (Pixel)other;
-				return this.x == pixel.x && this.y == pixel.y;
-			}
-			return false;
-		}
-
-		@Override
-		public int hashCode() {
-			return (x + "," + y).hashCode();
-		}
-		
-	}
-
-	public enum Mode {
-		COLOR_SELECT("Color Select"), FILL_SELECT("Fill Select"), SINGLE_SELECT("Single Select"), NONE("None");
-		private String name;
-		Mode(String name) {
-			this.name = name;
-		}
-		@Override
-		public String toString() {
-			return name;
-		}
-	}
-
 	private Mode currentMode;
 
-	public ImagePanel() {
-		color1 = Color.black;
-		color2 = Color.white;
-		BufferedImage defaultImage = new BufferedImage(300, 300, BufferedImage.TYPE_3BYTE_BGR);
+	public void resetImage() {
+		boolean firstTime = original == null;
+		int w = 300;
+		int h = 300;
+		if(!firstTime) {
+			w = original.getWidth();
+			h = original.getHeight();
+		}
+		BufferedImage defaultImage = new BufferedImage(w, h, BufferedImage.TYPE_3BYTE_BGR);
 		Graphics g = defaultImage.getGraphics();
 		g.setColor(Color.white);
 		g.fillRect(0, 0, defaultImage.getWidth(), defaultImage.getHeight());
 		g.dispose();
-		this.setImage(defaultImage);
+		setImage(defaultImage);
+		if(firstTime) {
+			resetView();
+		}
+	}
+	public ImagePanel() {
+		resetImage();
+		color1 = Color.black;
+		color2 = Color.white;
 		this.addMouseWheelListener(new MouseWheelListener() {
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
@@ -110,19 +117,26 @@ public class ImagePanel extends JPanel {
 		this.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-					int mouseX = (int) ((mousePosition.x - xOffset) / pixelSize);
-					int mouseY = (int) ((mousePosition.y - yOffset) / pixelSize);
-					if (mouseX >= 0 && mouseX < current.getWidth() && mouseY >= 0 && mouseY < current.getHeight()) {
-						Color color = new Color(current.getRGB(mouseX, mouseY));
-						String s = color.getRed() + ", " + color.getGreen() + ", " + color.getBlue();
-						File file = new File("pixelColors.txt");
-						try {
-							PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file, true)));
-							pw.println(s);
-							pw.close();
-						} catch (IOException e1) {
-							e1.printStackTrace();
+				if(e.isControlDown()) {
+					if(e.getKeyCode() == KeyEvent.VK_N) {
+						resetImage();
+					}
+				}
+				else {
+					if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+						int mouseX = (int) ((mousePosition.x - xOffset) / pixelSize);
+						int mouseY = (int) ((mousePosition.y - yOffset) / pixelSize);
+						if (mouseX >= 0 && mouseX < current.getWidth() && mouseY >= 0 && mouseY < current.getHeight()) {
+							Color color = new Color(current.getRGB(mouseX, mouseY));
+							String s = color.getRed() + ", " + color.getGreen() + ", " + color.getBlue();
+							File file = new File("pixelColors.txt");
+							try {
+								PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file, true)));
+								pw.println(s);
+								pw.close();
+							} catch (IOException e1) {
+								e1.printStackTrace();
+							}
 						}
 					}
 				}
@@ -138,7 +152,7 @@ public class ImagePanel extends JPanel {
 					yStart = e.getY();
 				}
 				else {
-					selectAction(getPixelPosition(), e.isShiftDown());
+					draw(getPixelPosition(), e.isShiftDown());
 				}
 				repaint();
 			}
@@ -148,10 +162,19 @@ public class ImagePanel extends JPanel {
 				if(e.getButton() == mouseButtonDown) {
 					mouseButtonDown = 0;
 				}
-				mouseDown = false;
 				if (e.getButton() == MouseEvent.BUTTON2) {
 					movingImage = false;
 				}
+			}
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				mousePosition = e.getPoint();
+				repaint();
+			}
+			@Override
+			public void mouseExited(MouseEvent e) {
+				mousePosition = null;
+				repaint();
 			}
 		});
 		this.addMouseMotionListener(new MouseMotionListener() {
@@ -165,11 +188,11 @@ public class ImagePanel extends JPanel {
 					yOffset += deltaY;
 					xStart = e.getX();
 					yStart = e.getY();
-					repaint();
 				}
 				else {
-					selectAction(getPixelPosition(), e.isShiftDown());
+					draw(getPixelPosition(), e.isShiftDown());
 				}
+				repaint();
 			}
 
 			@Override
@@ -180,40 +203,30 @@ public class ImagePanel extends JPanel {
 		});
 	}
 	
-	public void selectAction(Point pixel, boolean shiftDown) {
-		if (pixel.x >= 0 && pixel.x < current.getWidth() && pixel.y >= 0 && pixel.y < current.getHeight()) {
-			Color setTo = color1;
-			if(mouseButtonDown == MouseEvent.BUTTON3) {
-				setTo = color2;
-			}
-			
-			if (!shiftDown) {
-				deselectAll();
-			}
-			Point lowerBound = new Point(pixel.x - brushSize, pixel.y - brushSize);
-			lowerBound.x = Math.max(lowerBound.x, 0);
-			lowerBound.y = Math.max(lowerBound.y, 0);
-			
-			Point upperBound = new Point(pixel.x + brushSize, pixel.y + brushSize);
-			upperBound.x = Math.min(upperBound.x, current.getWidth()-1);
-			upperBound.y = Math.min(upperBound.y, current.getHeight()-1);
-
-//			if (currentMode == Mode.COLOR_SELECT) {
-//				colorSelect(lowerBound, upperBound, setTo);
-//			} 
-//			else 
-			if (currentMode == Mode.FILL_SELECT) {
-				fill(lowerBound, upperBound, setTo);
-			}
-			else if (currentMode == Mode.SINGLE_SELECT) {
-				for(int i = lowerBound.x; i <= upperBound.x; i++) {
-					for(int j = lowerBound.y; j <= upperBound.y; j++) {
-						current.setRGB(i, j, setTo.getRGB());
-					}
-				}
-				repaint();
-			}
+	public void draw(Point pixel, boolean shiftDown) {
+		Color setTo = color1;
+		if(mouseButtonDown == MouseEvent.BUTTON3) {
+			setTo = color2;
 		}
+		Point lowerBound = new Point(pixel.x - brushSize, pixel.y - brushSize);
+		lowerBound.x = Math.max(lowerBound.x, 0);
+		lowerBound.y = Math.max(lowerBound.y, 0);
+		
+		Point upperBound = new Point(pixel.x + brushSize, pixel.y + brushSize);
+		upperBound.x = Math.min(upperBound.x, current.getWidth()-1);
+		upperBound.y = Math.min(upperBound.y, current.getHeight()-1);
+		
+		if (currentMode == Mode.COLOR_SELECT) {
+			matchColorDraw(lowerBound, upperBound, setTo);
+		} 
+		else 
+		if (currentMode == Mode.FILL) {
+			fill(lowerBound, upperBound, setTo);
+		}
+		else if (currentMode == Mode.BRUSH) {
+			brush(lowerBound, upperBound, setTo);
+		}
+		repaint();
 	}
 	
 	public Point getPixelPosition() {
@@ -232,9 +245,15 @@ public class ImagePanel extends JPanel {
 		current = copyImage(image);
 		selected = new boolean[original.getWidth()][original.getHeight()];
 		selectionOverlay = new BufferedImage(original.getWidth(), original.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
-		pixelSize = 1;
-		xOffset = getWidth()/2 - current.getWidth()/2;
-		yOffset = getHeight()/2 - current.getHeight()/2;
+		repaint();
+	}
+	
+	public void resetView() {
+		int xfit = getWidth()/original.getWidth();
+		int yfit = getHeight()/original.getHeight();
+		pixelSize = Math.min(xfit, yfit);
+		xOffset = (int) (getWidth()/2 - pixelSize * current.getWidth()/2);
+		yOffset = (int) (getHeight()/2 - pixelSize * current.getHeight()/2);
 		repaint();
 	}
 
@@ -274,6 +293,14 @@ public class ImagePanel extends JPanel {
 		return neighbors;
 	}
 	
+	private void brush(Point lowerBound, Point upperBound, Color setTo) {
+		
+		for(int i = lowerBound.x; i <= upperBound.x; i++) {
+			for(int j = lowerBound.y; j <= upperBound.y; j++) {
+				current.setRGB(i, j, setTo.getRGB());
+			}
+		}
+	}
 	private void fill(Point lowerBound, Point upperBound, Color setTo) {
 		HashSet<Integer> colors = new HashSet<>();
 		HashSet<Pixel> visited = new HashSet<>();
@@ -299,29 +326,32 @@ public class ImagePanel extends JPanel {
 				}
 			}
 		}
-		repaint();
 	}
 
-	private void colorSelect(Point lowerBound, Point upperBound, boolean setTo) {
+	private void matchColorDraw(Point lowerBound, Point upperBound, Color setTo) {
 		HashSet<Integer> colors = new HashSet<>();
 		for(int i = lowerBound.x; i <= upperBound.x; i++) {
 			for(int j = lowerBound.y; j <= upperBound.y; j++) {
 				colors.add(current.getRGB(i, j));
 			}
 		}
+		if(colors.isEmpty()) {
+			return;
+		}
 		for (int i = 0; i < current.getWidth(); i++) {
 			for (int j = 0; j < current.getHeight(); j++) {
-				int rgb = current.getRGB(i, j);
-				if(colors.contains(rgb)) {
-					setSelected(i, j, setTo);
+				if(colors.contains(current.getRGB(i, j))) {
+					current.setRGB(i, j, setTo.getRGB());
 				}
 			}
 		}
-		repaint();
 	}
 
 	public void setMode(int modeIndex) {
 		currentMode = Mode.values()[modeIndex];
+	}
+	public void setMode(Mode mode) {
+		currentMode = mode;
 	}
 	public void setBrushSize(int brushSize) {
 		this.brushSize = brushSize;
@@ -344,7 +374,6 @@ public class ImagePanel extends JPanel {
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		Point pixelPosition = getPixelPosition();
 		g.setColor(Color.black);
 		g.fillRect(0, 0, getWidth(), getHeight());
 		int stripeWidth = 10;
@@ -357,23 +386,27 @@ public class ImagePanel extends JPanel {
 		g.drawImage(current, xOffset, yOffset, (int)(current.getWidth()*pixelSize), (int)(current.getHeight()*pixelSize), null);
 		g.drawImage(selectionOverlay, xOffset, yOffset, (int)(current.getWidth()*pixelSize), (int)(current.getHeight()*pixelSize), null);
 		
-		g.setColor(Color.black);
-		int boxsize = (int)(pixelSize * (brushSize * 2 + 1));
-		g.drawRect((int)(xOffset + (pixelPosition.x - brushSize) * pixelSize), (int)(yOffset + (pixelPosition.y - brushSize) * pixelSize), boxsize, boxsize);
-		
-		if(PaintDriver.DEBUG) {
-			g.setColor(Color.green);
-			g.drawString(brushSize + "", 10, getHeight() - 90);
-			g.drawString(pixelSize + "", 10, getHeight() - 70);
-			g.drawString(xOffset + "," + yOffset, 10, getHeight() - 50);
-			g.drawString(pixelPosition.x + "," + pixelPosition.y, 10, getHeight() - 30);
-			g.drawString(mousePosition.x + "," + mousePosition.y, 10, getHeight() - 10);
+		if(mousePosition != null) {
+			g.setColor(Color.black);
+			Point pixelPosition = getPixelPosition();
+			int boxsize = (int)(pixelSize * (brushSize * 2 + 1));
+			g.setColor(Color.black);
+			g.drawRect((int)(xOffset + (pixelPosition.x - brushSize) * pixelSize), (int)(yOffset + (pixelPosition.y - brushSize) * pixelSize), boxsize, boxsize);
+			g.setColor(Color.white);
+			g.drawRect((int)(xOffset + (pixelPosition.x - brushSize) * pixelSize) + 1, (int)(yOffset + (pixelPosition.y - brushSize) * pixelSize) + 1, boxsize-2, boxsize-2);
+			if(PaintDriver.DEBUG) {
+				g.setColor(Color.green);
+				g.drawString(brushSize + "", 10, getHeight() - 90);
+				g.drawString(pixelSize + "", 10, getHeight() - 70);
+				g.drawString(xOffset + "," + yOffset, 10, getHeight() - 50);
+				g.drawString(pixelPosition.x + "," + pixelPosition.y, 10, getHeight() - 30);
+				g.drawString(mousePosition.x + "," + mousePosition.y, 10, getHeight() - 10);
+			}
 		}
 		
-		g.setColor(color1);
-		g.fillRect(5, 5, 20, 20);
-		g.setColor(color2);
-		g.fillRect(30, 5, 20, 20);
+		g.setColor(Color.green);
+		g.setFont(PaintDriver.MAIN_FONT);
+		g.drawString(original.getWidth() + "," + original.getHeight(), 10, getHeight() - 10);
 	}
 
 	public static BufferedImage copyImage(BufferedImage image) {
