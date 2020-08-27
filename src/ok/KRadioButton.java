@@ -15,9 +15,10 @@ public class KRadioButton extends JRadioButton {
 	private boolean hovered = false;
 	private boolean pressed = false;
 	
+	private Image backgroundImage;
+	
 	public KRadioButton(String name) {
 		super(name);
-
 		addMouseListener(new MouseListener() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -43,6 +44,7 @@ public class KRadioButton extends JRadioButton {
 	}
 	@Override
 	public void paintComponent(Graphics g) {
+		g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
 		if(isSelected()) {
 			setBackground(SELECTED_COLOR);
 		}

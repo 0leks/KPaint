@@ -15,6 +15,7 @@ import ok.ImagePanel.*;
 
 public class PaintDriver {
 	public static final Font MAIN_FONT = new Font("Cooper Black", Font.PLAIN, 14);
+	public static final Font MAIN_FONT_BIG = new Font("Cooper Black", Font.PLAIN, 16);
 	public static final boolean DEBUG = false;
 	private JFrame frame;
 	private ImagePanel imagePanel;
@@ -24,43 +25,32 @@ public class PaintDriver {
 	private JButton saveFile;
 
 	private JPanel controlPanel;
+	
+	private HashMap<Mode, KRadioButton> modeButtons = new HashMap<>();
 
 	final JFileChooser fc = new JFileChooser(System.getProperty("user.dir"));
 
-	private static Image icon;
-
-	{
-		URL a = PaintDriver.class.getClassLoader().getResource("icon.png");
-		if (a != null) {
-			ImageIcon ii = new ImageIcon(a);
-			icon = ii.getImage();
-		}
-	}
-	
-	
-	public static Color getBestTextColor(Color c) {
-		return new Color(255 - c.getRed(), 255 - c.getGreen(), 255 - c.getBlue());
-	}
-	
 	public JButton setupColorButton(String text, HasColor c) {
-		JButton color2 = new JButton(text) {
+		int width = 80;
+		int height = 40;
+		Image backgroundImage = Utils.resizeImageIcon(Utils.loadImageIconResource("resources/transparentBackground.png"), width, height).getImage();
+		JButton chooseColorButton = new JButton(text) {
 			@Override
 			public void paintComponent(Graphics g) {
+				g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
 				g.setColor(c.getColor());
 				g.fillRect(0, 0, getWidth(), getHeight());
-//				g.fillRect(2, 2, getWidth() - 4, 10);
-//				g.fillRect(2, getHeight() - 12, getWidth() - 4, 10);
 				setForeground(Color.white);
-				g.setFont(MAIN_FONT);
-				setForeground(getBestTextColor(c.getColor()));
+				g.setFont(MAIN_FONT_BIG);
+				setForeground(Utils.getBestTextColor(c.getColor()));
 				super.paintComponent(g);
 			}
 		};
-		color2.setOpaque(false);
-		color2.setContentAreaFilled(false);
-		color2.setPreferredSize(new Dimension(80, 40));
-		color2.setFocusable(false);
-		color2.addActionListener(new ActionListener() {
+		chooseColorButton.setOpaque(false);
+		chooseColorButton.setContentAreaFilled(false);
+		chooseColorButton.setPreferredSize(new Dimension(width, height));
+		chooseColorButton.setFocusable(false);
+		chooseColorButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Color newColor = JColorChooser.showDialog(null, "Choose Color", c.getColor());
@@ -69,20 +59,7 @@ public class PaintDriver {
 				}
 			}
 		});
-		return color2;
-	}
-	
-	public static final ImageIcon loadImageIconResource(String location) {
-		URL iconURL = PaintDriver.class.getResource(location);
-		if (iconURL != null) {
-			return new ImageIcon(iconURL);
-		}
-		return null;
-	}
-	public static final ImageIcon resizeImageIcon(ImageIcon icon, int width, int height) {
-		Image image = icon.getImage(); // transform it 
-		Image newimg = image.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH); // scale it the smooth way  
-		return new ImageIcon(newimg);  // transform it back
+		return chooseColorButton;
 	}
 
 	public PaintDriver() {
@@ -92,26 +69,26 @@ public class PaintDriver {
 			ex.printStackTrace();
 		}
 		frame = new JFrame("Transparent Paint");
-		frame.setSize(1000, 800);
+		frame.setSize((int)(Toolkit.getDefaultToolkit().getScreenSize().width*0.9), (int)(Toolkit.getDefaultToolkit().getScreenSize().height*0.9));
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setIconImage(icon);
 		frame.setLocationRelativeTo(null);
 
-		frame.setIconImage(loadImageIconResource("resources/icon.png").getImage());
+		frame.setIconImage(Utils.loadImageIconResource("resources/icon.png").getImage());
 		frame.setVisible(true);
-
+		
 		imagePanel = new ImagePanel();
 		frame.add(imagePanel, BorderLayout.CENTER);
 
 		int min = 1;
-		int max = 20;
-		int spacing = 5;
+		int max = 21;
+		int spacing = 4;
 		JSlider brushSize = new JSlider(JSlider.HORIZONTAL, min, max, 1);
 		Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
 		for (int i = min; i <= max; i += spacing) {
 			// int size = (int) Math.pow(2, i);
-			labelTable.put(new Integer(i), new JLabel((i * 2 - 1) + ""));
-			i = i - i % spacing;
+//			labelTable.put(new Integer(i), new JLabel((i * 2 - 1) + ""));
+			labelTable.put(new Integer(i), new JLabel(i + ""));
+//			i = i - i % spacing;
 			System.out.println(i);
 		}
 		brushSize.setLabelTable(labelTable);
@@ -121,7 +98,7 @@ public class PaintDriver {
 		brushSize.setFocusable(false);
 		brushSize.addChangeListener(e -> {
 			// int size = (int) Math.pow(2, brushSize.getValue());
-			imagePanel.setBrushSize(brushSize.getValue() - 1);
+			imagePanel.setBrushSize(brushSize.getValue());
 		});
 
 		String[] options = new String[ImagePanel.Mode.values().length];
@@ -149,10 +126,11 @@ public class PaintDriver {
 				modeButton.setSelected(true);
 				imagePanel.setMode(mode);
 			}
+			modeButtons.put(mode, modeButton);
 		}
 		
 		controlPanel.add(brushSize);
-		
+
 		JButton color1 = setupColorButton("Left", new HasColor() {
 			@Override
 			public Color getColor() {
@@ -218,6 +196,16 @@ public class PaintDriver {
 		imagePanel.resetView();
 		frame.repaint();
 		imagePanel.requestFocus();
+		
+		GUIInterface guiInterface = new GUIInterface() {
+			@Override
+			public void finishedSelection() {
+//				modeButtons.get(Mode.SELECT).setSelected(false);
+//				modeButtons.get(Mode.MOVE).setSelected(true);
+				modeButtons.get(Mode.MOVE).doClick();
+			}
+		};
+		imagePanel.setGUIInterface(guiInterface);
 	}
 
 	private void openImage(String path) {
