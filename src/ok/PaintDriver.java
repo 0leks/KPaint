@@ -19,6 +19,7 @@ public class PaintDriver {
 	public static final boolean DEBUG = false;
 	private JFrame frame;
 	private ImagePanel imagePanel;
+	private ImagePanelInterface imagePanelInterface;
 //	private JComboBox fillSelect;
 	private JButton setTransparent;
 	private JButton openFile;
@@ -77,6 +78,7 @@ public class PaintDriver {
 		frame.setVisible(true);
 		
 		imagePanel = new ImagePanel();
+		imagePanelInterface = imagePanel.getInterface();
 		frame.add(imagePanel, BorderLayout.CENTER);
 
 		int min = 1;
@@ -106,6 +108,32 @@ public class PaintDriver {
 			options[i] = ImagePanel.Mode.values()[i].toString();
 		}
 		controlPanel = new JPanel();
+		KButton undoButton = setupKButton("Undo", "resources/undo.png");
+		undoButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				imagePanelInterface.undo();
+			}
+		});
+		controlPanel.add(undoButton);
+		KButton redoButton = setupKButton("Redo", "resources/redo.png");
+		redoButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				imagePanelInterface.redo();
+			}
+		});
+		controlPanel.add(redoButton);
+		
+		KButton applyButton = setupKButton("Apply Selection", "resources/apply.png");
+		applyButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				imagePanelInterface.applySelection();
+			}
+		});
+		controlPanel.add(applyButton);
+		
 		ButtonGroup group = new ButtonGroup();
 		for(Mode mode : ImagePanel.Mode.values()) {
 			KRadioButton modeButton = new KRadioButton(mode.toString());
@@ -155,8 +183,7 @@ public class PaintDriver {
 		});
 		controlPanel.add(color2);
 
-		openFile = new JButton("Open File");
-		openFile.setFocusable(false);
+		openFile = setupKButton("Open File", "resources/open.png");
 		openFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -169,19 +196,23 @@ public class PaintDriver {
 		});
 		controlPanel.add(openFile);
 
-		saveFile = new JButton("Save File");
-		saveFile.setFocusable(false);
+		saveFile = setupKButton("Save File", "resources/save.png");
 		saveFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int returnVal = fc.showOpenDialog(frame);
+				int returnVal = fc.showSaveDialog(frame);
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					File file = fc.getSelectedFile();
 					String path = file.getAbsolutePath();
-					String format = path.substring(path.length() - 3);
+					String ext = getExtension(path);
+					if(ext == null) {
+						ext = "png";
+						file = new File(path + "." + ext);
+//						JOptionPane.showMessageDialog(frame, "Failed to save, no file extension specified");
+					}
 					BufferedImage current = imagePanel.getCurrentImage();
 					try {
-						ImageIO.write(current, format, file);
+						ImageIO.write(current, ext, file);
 					} catch (IOException e1) {
 						System.err.println("FileName = " + path);
 						e1.printStackTrace();
@@ -193,25 +224,55 @@ public class PaintDriver {
 
 		frame.add(controlPanel, BorderLayout.NORTH);
 		frame.validate();
-		imagePanel.resetView();
+		imagePanelInterface.resetView();
 		frame.repaint();
 		imagePanel.requestFocus();
 		
 		GUIInterface guiInterface = new GUIInterface() {
 			@Override
 			public void finishedSelection() {
-//				modeButtons.get(Mode.SELECT).setSelected(false);
-//				modeButtons.get(Mode.MOVE).setSelected(true);
 				modeButtons.get(Mode.MOVE).doClick();
 			}
 		};
 		imagePanel.setGUIInterface(guiInterface);
+		
+		EventQueue.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+				} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+						| UnsupportedLookAndFeelException ex) {
+				}
+			}
+		});
+	}
+	
+	private KButton setupKButton(String text, String iconPath) {
+		KButton button = new KButton(text);
+		button.setIcon(Utils.resizeImageIcon(Utils.loadImageIconResource(iconPath), 32, 32));
+		button.setMargin(new Insets(0, 0, 0, 0));
+		button.setFocusable(false);
+		button.setFocusPainted(false);
+		button.setBackground(Color.black);
+		button.setBorder(BorderFactory.createLineBorder(Color.black, 1));
+		button.setBorderPainted(true);
+		return button;
+	}
+	
+	private String getExtension(String filename) {
+		int lastDot = filename.lastIndexOf(".");
+		if(lastDot == -1) {
+			return null;
+		}
+		return filename.substring(lastDot+1);
 	}
 
 	private void openImage(String path) {
 		BufferedImage image = loadImage(path);
 		if (image != null) {
 			imagePanel.setImage(image);
+			imagePanelInterface.resetView();
 		}
 	}
 
@@ -220,6 +281,7 @@ public class PaintDriver {
 		try {
 			BufferedImage read = ImageIO.read(file);
 			fc.setCurrentDirectory(file.getParentFile());
+			fc.setSelectedFile(file);
 			return read;
 		} catch (IOException e) {
 			System.err.println("File name = " + fileName);

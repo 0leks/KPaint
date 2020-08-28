@@ -58,4 +58,12 @@ public class Utils {
 		// Return the buffered image
 		return bimage;
 	}
+
+	public static final BufferedImage copyImage(BufferedImage image) {
+		BufferedImage copy = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		Graphics g = copy.getGraphics();
+		g.drawImage(image, 0, 0, null);
+		g.dispose();
+		return copy;
+	}
 }

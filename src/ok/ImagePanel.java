@@ -49,9 +49,8 @@ public class ImagePanel extends JPanel {
 			return (x + "," + y).hashCode();
 		}
 	}
-
-	private BufferedImage current;
-	private BufferedImage selectionOverlay;
+	
+	private History history = new History();
 	private volatile BufferedImage selectedImage;
 	private int xOffset;
 	private int yOffset;
@@ -63,8 +62,6 @@ public class ImagePanel extends JPanel {
 	private boolean movingSelection;
 	private int mouseButtonDown;
 
-	private boolean[][] selected;
-
 	private double pixelSize = 1;
 	private int brushSize = 1;
 	
@@ -75,12 +72,36 @@ public class ImagePanel extends JPanel {
 	
 	private volatile Rectangle selectedRectangle;
 	private GUIInterface guiInterface;
+	private ImagePanelInterface ipInterface = new ImagePanelInterface() {
+		@Override
+		public void undo() {
+			history.rewindVersion();
+			repaint();
+		}
+		@Override
+		public void redo() {
+			history.upwindVersion();
+			repaint();
+		}
+		@Override
+		public void resetView() {
+			ImagePanel.this.resetView();
+		}
+		@Override
+		public void applySelection() {
+			ImagePanel.this.applySelection();
+		}
+	};
+	
+	public ImagePanelInterface getInterface() {
+		return ipInterface;
+	}
 
 	public void resetImage(int w, int h) {
-		boolean firstTime = current == null;
+		boolean firstTime = history.getCurrent() == null;
 		if(!firstTime) {
-			w = current.getWidth();
-			h = current.getHeight();
+			w = history.getCurrent().getWidth();
+			h = history.getCurrent().getHeight();
 		}
 		BufferedImage defaultImage = new BufferedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics g = defaultImage.getGraphics();
@@ -100,8 +121,8 @@ public class ImagePanel extends JPanel {
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
 				Point pixelPosition = getPixelPosition(mousePosition);
-				pixelPosition.x = Math.max(0, Math.min(pixelPosition.x, current.getWidth()));
-				pixelPosition.y = Math.max(0, Math.min(pixelPosition.y, current.getHeight()));
+				pixelPosition.x = Math.max(0, Math.min(pixelPosition.x, history.getCurrent().getWidth()));
+				pixelPosition.y = Math.max(0, Math.min(pixelPosition.y, history.getCurrent().getHeight()));
 				double oldPixelSize = pixelSize;
 				if (e.getWheelRotation() > 0) {
 					pixelSize = pixelSize * 0.9;
@@ -122,7 +143,7 @@ public class ImagePanel extends JPanel {
 			public void keyReleased(KeyEvent e) {
 				if(e.isControlDown()) {
 					if(e.getKeyCode() == KeyEvent.VK_N) {
-						resetImage(current.getWidth(), current.getHeight());
+						resetImage(history.getCurrent().getWidth(), history.getCurrent().getHeight());
 					}
 					if(e.getKeyCode() == KeyEvent.VK_V) {
 						Image image = Utils.getImageFromClipboard();
@@ -131,13 +152,21 @@ public class ImagePanel extends JPanel {
 							resetView();
 						}
 					}
+					if(e.getKeyCode() == KeyEvent.VK_Z) {
+						if(e.isShiftDown()) {
+							ipInterface.redo();
+						}
+						else {
+							ipInterface.undo();
+						}
+					}
 				}
 				else {
 					if (e.getKeyCode() == KeyEvent.VK_SPACE) {
 						int mouseX = (int) ((mousePosition.x - xOffset) / pixelSize);
 						int mouseY = (int) ((mousePosition.y - yOffset) / pixelSize);
-						if (mouseX >= 0 && mouseX < current.getWidth() && mouseY >= 0 && mouseY < current.getHeight()) {
-							Color color = new Color(current.getRGB(mouseX, mouseY));
+						if (mouseX >= 0 && mouseX < history.getCurrent().getWidth() && mouseY >= 0 && mouseY < history.getCurrent().getHeight()) {
+							Color color = new Color(history.getCurrent().getRGB(mouseX, mouseY));
 							String s = color.getRed() + ", " + color.getGreen() + ", " + color.getBlue();
 							File file = new File("pixelColors.txt");
 							try {
@@ -150,8 +179,7 @@ public class ImagePanel extends JPanel {
 						}
 					}
 					else if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-						applySelection(selectedRectangle, selectedImage);
-						resetSelection();
+						ipInterface.applySelection();
 					}
 				}
 			}
@@ -198,6 +226,10 @@ public class ImagePanel extends JPanel {
 					updateSelectionRectangle();
 					updateSelection();
 					guiInterface.finishedSelection();
+				}
+				else {
+					history.pushVersion();
+					repaint();
 				}
 				previousMousePosition = mousePosition;
 			}
@@ -249,11 +281,13 @@ public class ImagePanel extends JPanel {
 		});
 	}
 	
+	
 	public void setGUIInterface(GUIInterface guiInterface) {
 		this.guiInterface = guiInterface;
 	}
 	
 	public void draw(Point pixel, boolean shiftDown) {
+		history.modified();
 		Color setTo = color1;
 		if(mouseButtonDown == MouseEvent.BUTTON3) {
 			setTo = color2;
@@ -263,8 +297,8 @@ public class ImagePanel extends JPanel {
 		lowerBound.x = Math.max(lowerBound.x, 0);
 		lowerBound.y = Math.max(lowerBound.y, 0);
 		
-		upperBound.x = Math.min(upperBound.x, current.getWidth()-1);
-		upperBound.y = Math.min(upperBound.y, current.getHeight()-1);
+		upperBound.x = Math.min(upperBound.x, history.getCurrent().getWidth()-1);
+		upperBound.y = Math.min(upperBound.y, history.getCurrent().getHeight()-1);
 		
 		if (currentMode == Mode.COLOR_SELECT) {
 			matchColorDraw(lowerBound, upperBound, setTo);
@@ -284,15 +318,16 @@ public class ImagePanel extends JPanel {
 		Point two = getPixelPosition(previousMousePosition);
 		int minx = Math.max(Math.min(one.x, two.x), 0);
 		int miny = Math.max(Math.min(one.y, two.y), 0);
-		int maxx = Math.min(Math.max(one.x, two.x), current.getWidth()-1);
-		int maxy = Math.min(Math.max(one.y, two.y), current.getHeight()-1);
+		int maxx = Math.min(Math.max(one.x, two.x), history.getCurrent().getWidth()-1);
+		int maxy = Math.min(Math.max(one.y, two.y), history.getCurrent().getHeight()-1);
 		Rectangle selected = new Rectangle(minx, miny, maxx-minx, maxy-miny);
 		selectedRectangle = selected;
 	}
 	
 	public void updateSelection() {
-		BufferedImage subimage = current.getSubimage(selectedRectangle.x, selectedRectangle.y, selectedRectangle.width + 1, selectedRectangle.height + 1);
-		selectedImage = copyImage(subimage);
+		history.modified();
+		BufferedImage subimage = history.getCurrent().getSubimage(selectedRectangle.x, selectedRectangle.y, selectedRectangle.width + 1, selectedRectangle.height + 1);
+		selectedImage = Utils.copyImage(subimage);
 		brush(new Point(selectedRectangle.x, selectedRectangle.y), new Point(selectedRectangle.x+selectedRectangle.width, selectedRectangle.y + selectedRectangle.height), color2);
 		repaint();
 	}
@@ -300,20 +335,21 @@ public class ImagePanel extends JPanel {
 	public void resizeCanvas(int xpos, int ypos, int width, int height) {
 		BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics g = newImage.getGraphics();
-		g.drawImage(current, xpos, ypos, null);
+		g.drawImage(history.getCurrent(), xpos, ypos, null);
 		g.dispose();
-		current = newImage;
+		history.setCurrentImage(newImage);
 	}
 	
-	public void applySelection(Rectangle selectedRectangle, BufferedImage selectedImage) {
+	private void applySelection() {
 		if(selectedRectangle == null || selectedImage == null) {
 			return;
 		}
+		history.modified();
 		int minx = Math.min(selectedRectangle.x, 0);
 		int miny = Math.min(selectedRectangle.y, 0);
-		int maxx = Math.max(selectedRectangle.x + selectedImage.getWidth(), current.getWidth());
-		int maxy = Math.max(selectedRectangle.y + selectedImage.getHeight(), current.getHeight());
-		if(maxx - minx != current.getWidth() || maxy - miny != current.getHeight()) {
+		int maxx = Math.max(selectedRectangle.x + selectedImage.getWidth(), history.getCurrent().getWidth());
+		int maxy = Math.max(selectedRectangle.y + selectedImage.getHeight(), history.getCurrent().getHeight());
+		if(maxx - minx != history.getCurrent().getWidth() || maxy - miny != history.getCurrent().getHeight()) {
 			System.out.println("resizing");
 			int x = 0;
 			int y = 0;
@@ -333,12 +369,12 @@ public class ImagePanel extends JPanel {
 			for(int j = 0; j < selectedImage.getHeight(); j++) {
 				int x = i + selectedRectangle.x;
 				int y = j + selectedRectangle.y;
-				current.setRGB(x, y, selectedImage.getRGB(i, j));
-//				if(x >= 0 && y >= 0 && x < current.getWidth() && y < current.getHeight()) {
-//					current.setRGB(x, y, selectedImage.getRGB(i, j));
-//				}
+				history.getCurrent().setRGB(x, y, selectedImage.getRGB(i, j));
 			}
 		}
+		resetSelection();
+		history.pushVersion();
+		repaint();
 	}
 	
 	public void resetSelection() {
@@ -354,50 +390,21 @@ public class ImagePanel extends JPanel {
 	}
 
 	public BufferedImage getCurrentImage() {
-		return current;
+		return history.getCurrent();
 	}
 
 	public void setImage(BufferedImage image) {
-		current = copyImage(image);
-		selected = new boolean[current.getWidth()][current.getHeight()];
-		selectionOverlay = new BufferedImage(current.getWidth(), current.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
+		history.setInitialImage(Utils.copyImage(image));
 		repaint();
 	}
 	
-	public void resetView() {
-		double xfit = 1.0*getWidth()/current.getWidth();
-		double yfit = 1.0*getHeight()/current.getHeight();
+	private void resetView() {
+		double xfit = 1.0*getWidth()/history.getCurrent().getWidth();
+		double yfit = 1.0*getHeight()/history.getCurrent().getHeight();
 		pixelSize = Math.min(xfit, yfit) * 0.95;
-		xOffset = (int) (getWidth()/2 - pixelSize * current.getWidth()/2);
-		yOffset = (int) (getHeight()/2 - pixelSize * current.getHeight()/2);
+		xOffset = (int) (getWidth()/2 - pixelSize * history.getCurrent().getWidth()/2);
+		yOffset = (int) (getHeight()/2 - pixelSize * history.getCurrent().getHeight()/2);
 		repaint();
-	}
-
-	public void setTransparent() {
-		for (int x = 0; x < selected.length; x++) {
-			for (int y = 0; y < selected[x].length; y++) {
-				if (selected[x][y]) {
-					current.setRGB(x, y, new Color(0, 0, 0, 0).getRGB());
-				}
-			}
-		}
-		deselectAll();
-		repaint();
-	}
-
-	public void deselectAll() {
-		selected = new boolean[selected.length][selected[0].length];
-		selectionOverlay = new BufferedImage(current.getWidth(), current.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
-	}
-	
-	private void setSelected(int x, int y, boolean active) {
-		selected[x][y] = active;
-		if(selected[x][y]) {
-			selectionOverlay.setRGB(x, y, Color.red.getRGB());
-		}
-		else {
-			selectionOverlay.setRGB(x, y, new Color(0, 0, 0, 0).getRGB());
-		}
 	}
 	
 	private LinkedList<Pixel> getNeighbors(Pixel pixel) {
@@ -413,7 +420,7 @@ public class ImagePanel extends JPanel {
 		
 		for(int i = lowerBound.x; i <= upperBound.x; i++) {
 			for(int j = lowerBound.y; j <= upperBound.y; j++) {
-				current.setRGB(i, j, setTo.getRGB());
+				history.getCurrent().setRGB(i, j, setTo.getRGB());
 			}
 		}
 	}
@@ -425,18 +432,18 @@ public class ImagePanel extends JPanel {
 			for(int j = lowerBound.y; j <= upperBound.y; j++) {
 				Pixel start = new Pixel(i, j);
 				search.add(start);
-				colors.add(current.getRGB(i, j));
+				colors.add(history.getCurrent().getRGB(i, j));
 				visited.add(start);
 			}
 		}
 		while (!search.isEmpty()) {
 			Pixel pixel = search.removeFirst();
-			current.setRGB(pixel.x, pixel.y, setTo.getRGB());
+			history.getCurrent().setRGB(pixel.x, pixel.y, setTo.getRGB());
 //			setSelected(pixel.x, pixel.y, setTo);
 			for(Pixel neighbor : getNeighbors(pixel)) {
-				if(!visited.contains(neighbor) && neighbor.x >= 0 && neighbor.y >= 0 && neighbor.x < current.getWidth() && neighbor.y < current.getHeight()) {
+				if(!visited.contains(neighbor) && neighbor.x >= 0 && neighbor.y >= 0 && neighbor.x < history.getCurrent().getWidth() && neighbor.y < history.getCurrent().getHeight()) {
 					visited.add(neighbor);
-					if (colors.contains(current.getRGB(neighbor.x, neighbor.y))) {
+					if (colors.contains(history.getCurrent().getRGB(neighbor.x, neighbor.y))) {
 						search.add(neighbor);
 					}
 				}
@@ -448,16 +455,16 @@ public class ImagePanel extends JPanel {
 		HashSet<Integer> colors = new HashSet<>();
 		for(int i = lowerBound.x; i <= upperBound.x; i++) {
 			for(int j = lowerBound.y; j <= upperBound.y; j++) {
-				colors.add(current.getRGB(i, j));
+				colors.add(history.getCurrent().getRGB(i, j));
 			}
 		}
 		if(colors.isEmpty()) {
 			return;
 		}
-		for (int i = 0; i < current.getWidth(); i++) {
-			for (int j = 0; j < current.getHeight(); j++) {
-				if(colors.contains(current.getRGB(i, j))) {
-					current.setRGB(i, j, setTo.getRGB());
+		for (int i = 0; i < history.getCurrent().getWidth(); i++) {
+			for (int j = 0; j < history.getCurrent().getHeight(); j++) {
+				if(colors.contains(history.getCurrent().getRGB(i, j))) {
+					history.getCurrent().setRGB(i, j, setTo.getRGB());
 				}
 			}
 		}
@@ -510,12 +517,11 @@ public class ImagePanel extends JPanel {
 		g2d.setStroke(new BasicStroke(strokeSize));
 		
 		g.translate(xOffset, yOffset);
-		g.drawImage(current, 0, 0, (int)(current.getWidth()*pixelSize), (int)(current.getHeight()*pixelSize), null);
-		g.drawImage(selectionOverlay, 0, 0, (int)(current.getWidth()*pixelSize), (int)(current.getHeight()*pixelSize), null);
+		g.drawImage(history.getCurrent(), 0, 0, (int)(history.getCurrent().getWidth()*pixelSize), (int)(history.getCurrent().getHeight()*pixelSize), null);
 		g.setColor(Color.white);
-		g.drawRect(-strokeSize*2, -strokeSize*2, (int)(current.getWidth()*pixelSize) + strokeSize*4, (int)(current.getHeight()*pixelSize) + strokeSize*4);
+		g.drawRect(-strokeSize*2, -strokeSize*2, (int)(history.getCurrent().getWidth()*pixelSize) + strokeSize*4, (int)(history.getCurrent().getHeight()*pixelSize) + strokeSize*4);
 		g.setColor(Color.black);
-		g.drawRect(-strokeSize, -strokeSize, (int)(current.getWidth()*pixelSize) + strokeSize*2, (int)(current.getHeight()*pixelSize) + strokeSize*2);
+		g.drawRect(-strokeSize, -strokeSize, (int)(history.getCurrent().getWidth()*pixelSize) + strokeSize*2, (int)(history.getCurrent().getHeight()*pixelSize) + strokeSize*2);
 
 		if(selectedImage != null) {
 			g.drawImage(selectedImage, (int) (selectedRectangle.x*pixelSize)+1, (int) (selectedRectangle.y*pixelSize)+1, (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1, null);
@@ -547,14 +553,22 @@ public class ImagePanel extends JPanel {
 		g.setColor(Color.green);
 		g.setFont(PaintDriver.MAIN_FONT);
 		g.drawString("Brush Size: " + brushSize, 10, getHeight() - 25);
-		g.drawString(current.getWidth() + "," + current.getHeight(), 10, getHeight() - 10);
+		g.drawString(history.getCurrent().getWidth() + "," + history.getCurrent().getHeight(), 10, getHeight() - 10);
+
+		int historyPreviewSize = 70;
+		int historyPreviewOffset = 10;
+		for(int i = 0; i < history.getHistory().size(); i++) {
+			g.drawImage(history.getHistory().get(i), getWidth() - historyPreviewOffset - historyPreviewSize, historyPreviewOffset + i*(historyPreviewOffset + historyPreviewSize), historyPreviewSize, historyPreviewSize, null);
+			g.setColor(Color.black);
+			g2d.setStroke(new BasicStroke(1));
+			g.drawRect(getWidth() - historyPreviewOffset - historyPreviewSize, historyPreviewOffset + i*(historyPreviewOffset + historyPreviewSize), historyPreviewSize, historyPreviewSize);
+
+			if(i == history.getCursor()) {
+				g.setColor(Color.green);
+				g2d.setStroke(new BasicStroke(3));
+				g.drawRect(getWidth() - historyPreviewOffset*3/2 - historyPreviewSize, historyPreviewOffset/2 + i*(historyPreviewOffset + historyPreviewSize), historyPreviewSize + historyPreviewOffset, historyPreviewSize + historyPreviewOffset);
+			}
+		}
 	}
 
-	public static BufferedImage copyImage(BufferedImage image) {
-		BufferedImage copy = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
-		Graphics g = copy.getGraphics();
-		g.drawImage(image, 0, 0, null);
-		g.dispose();
-		return copy;
-	}
 }
