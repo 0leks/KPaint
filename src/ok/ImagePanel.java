@@ -330,13 +330,19 @@ public class ImagePanel extends JPanel {
 		brush(new Point(selectedRectangle.x, selectedRectangle.y), new Point(selectedRectangle.x+selectedRectangle.width, selectedRectangle.y + selectedRectangle.height), color2);
 		repaint();
 	}
-	
-	public void resizeCanvas(int xpos, int ypos, int width, int height) {
-		BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+
+	public void resizeCanvas(Rectangle newSize) {
+		BufferedImage newImage = new BufferedImage(newSize.width, newSize.height, BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics g = newImage.getGraphics();
-		g.drawImage(history.getCurrent(), xpos, ypos, null);
+		g.drawImage(history.getCurrent(), -newSize.x, -newSize.y, null);
 		g.dispose();
 		history.setCurrentImage(newImage);
+		if(selectedRectangle != null) {
+			selectedRectangle.x -= newSize.x;
+			selectedRectangle.y -= newSize.y;
+		}
+		xOffset += newSize.x*pixelSize;
+		yOffset += newSize.y*pixelSize;
 	}
 	
 	private void pasteFromClipboard() {
@@ -345,7 +351,7 @@ public class ImagePanel extends JPanel {
 			ipInterface.applySelection();
 			selectedImage = Utils.toBufferedImage(image); 
 			BufferedImage curImage = getCurrentImage();
-			selectedRectangle = new Rectangle(curImage.getWidth()/2 - selectedImage.getWidth()/2, curImage.getHeight()/2 - selectedImage.getHeight()/2, selectedImage.getWidth()-1, selectedImage.getHeight()-1);
+			selectedRectangle = new Rectangle((int)((getWidth()/2-xOffset)/pixelSize - selectedImage.getWidth()/2), (int)((getHeight()/2-yOffset)/pixelSize - selectedImage.getHeight()/2), selectedImage.getWidth()-1, selectedImage.getHeight()-1);
 			repaint();
 		}
 	}
@@ -356,30 +362,35 @@ public class ImagePanel extends JPanel {
 		repaint();
 	}
 	
+	private Rectangle getCanvasSizeWithSelection() {
+		if(selectedRectangle == null || selectedImage == null) {
+			return new Rectangle(0, 0, getCurrentImage().getWidth(), getCurrentImage().getHeight());
+		}
+		int minx = Math.min(selectedRectangle.x, 0);
+		int miny = Math.min(selectedRectangle.y, 0);
+		int maxx = Math.max(selectedRectangle.x + selectedImage.getWidth(), getCurrentImage().getWidth());
+		int maxy = Math.max(selectedRectangle.y + selectedImage.getHeight(), getCurrentImage().getHeight());
+		int x = 0;
+		int y = 0;
+		if(selectedRectangle.x < 0) {
+			x = selectedRectangle.x;
+		}
+		if(selectedRectangle.y < 0) {
+			y = selectedRectangle.y;
+		}
+		return new Rectangle(x, y, maxx - minx, maxy - miny);
+	}
+	
 	private void applySelection() {
 		if(selectedRectangle == null || selectedImage == null) {
 			return;
 		}
 		history.modified();
-		int minx = Math.min(selectedRectangle.x, 0);
-		int miny = Math.min(selectedRectangle.y, 0);
-		int maxx = Math.max(selectedRectangle.x + selectedImage.getWidth(), history.getCurrent().getWidth());
-		int maxy = Math.max(selectedRectangle.y + selectedImage.getHeight(), history.getCurrent().getHeight());
-		if(maxx - minx != history.getCurrent().getWidth() || maxy - miny != history.getCurrent().getHeight()) {
+		Rectangle newCanvasSize = getCanvasSizeWithSelection();
+		
+		if(newCanvasSize.width != getCurrentImage().getWidth() || newCanvasSize.height != getCurrentImage().getHeight()) {
 			System.out.println("resizing");
-			int x = 0;
-			int y = 0;
-			if(selectedRectangle.x < 0) {
-				x = -selectedRectangle.x;
-			}
-			if(selectedRectangle.y < 0) {
-				y = -selectedRectangle.y;
-			}
-			resizeCanvas(x, y, maxx - minx, maxy - miny);
-			selectedRectangle.x += x;
-			selectedRectangle.y += y;
-			xOffset -= x*pixelSize;
-			yOffset -= y*pixelSize;
+			resizeCanvas(newCanvasSize);
 		}
 		for(int i = 0; i < selectedImage.getWidth(); i++) {
 			for(int j = 0; j < selectedImage.getHeight(); j++) {
