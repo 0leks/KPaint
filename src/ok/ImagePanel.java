@@ -91,6 +91,14 @@ public class ImagePanel extends JPanel {
 		public void applySelection() {
 			ImagePanel.this.applySelection();
 		}
+		@Override
+		public void clearSelection() {
+			ImagePanel.this.clearSelection();
+		}
+		@Override
+		public void pasteFromClipboard() {
+			ImagePanel.this.pasteFromClipboard();
+		}
 	};
 	
 	public ImagePanelInterface getInterface() {
@@ -146,10 +154,14 @@ public class ImagePanel extends JPanel {
 						resetImage(history.getCurrent().getWidth(), history.getCurrent().getHeight());
 					}
 					if(e.getKeyCode() == KeyEvent.VK_V) {
-						Image image = Utils.getImageFromClipboard();
-						if(image != null) {
-							setImage(Utils.toBufferedImage(image));
-							resetView();
+						ipInterface.pasteFromClipboard();
+					}
+					else if(e.getKeyCode() == KeyEvent.VK_C) {
+						if(selectedImage != null) {
+							ClipboardImage.setClipboard(selectedImage);
+						}
+						else {
+							ClipboardImage.setClipboard(getCurrentImage());
 						}
 					}
 					if(e.getKeyCode() == KeyEvent.VK_Z) {
@@ -162,24 +174,11 @@ public class ImagePanel extends JPanel {
 					}
 				}
 				else {
-					if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-						int mouseX = (int) ((mousePosition.x - xOffset) / pixelSize);
-						int mouseY = (int) ((mousePosition.y - yOffset) / pixelSize);
-						if (mouseX >= 0 && mouseX < history.getCurrent().getWidth() && mouseY >= 0 && mouseY < history.getCurrent().getHeight()) {
-							Color color = new Color(history.getCurrent().getRGB(mouseX, mouseY));
-							String s = color.getRed() + ", " + color.getGreen() + ", " + color.getBlue();
-							File file = new File("pixelColors.txt");
-							try {
-								PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file, true)));
-								pw.println(s);
-								pw.close();
-							} catch (IOException e1) {
-								e1.printStackTrace();
-							}
-						}
-					}
-					else if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 						ipInterface.applySelection();
+					}
+					else if(e.getKeyCode() == KeyEvent.VK_DELETE) {
+						ipInterface.clearSelection();
 					}
 				}
 			}
@@ -338,6 +337,23 @@ public class ImagePanel extends JPanel {
 		g.drawImage(history.getCurrent(), xpos, ypos, null);
 		g.dispose();
 		history.setCurrentImage(newImage);
+	}
+	
+	private void pasteFromClipboard() {
+		Image image = Utils.getImageFromClipboard();
+		if(image != null) {
+			ipInterface.applySelection();
+			selectedImage = Utils.toBufferedImage(image); 
+			BufferedImage curImage = getCurrentImage();
+			selectedRectangle = new Rectangle(curImage.getWidth()/2 - selectedImage.getWidth()/2, curImage.getHeight()/2 - selectedImage.getHeight()/2, selectedImage.getWidth()-1, selectedImage.getHeight()-1);
+			repaint();
+		}
+	}
+	
+	private void clearSelection() {
+		selectedImage = null;
+		selectedRectangle = null;
+		repaint();
 	}
 	
 	private void applySelection() {
@@ -553,7 +569,7 @@ public class ImagePanel extends JPanel {
 		g.setColor(Color.green);
 		g.setFont(PaintDriver.MAIN_FONT);
 		g.drawString("Brush Size: " + brushSize, 10, getHeight() - 25);
-		g.drawString(history.getCurrent().getWidth() + "," + history.getCurrent().getHeight(), 10, getHeight() - 10);
+		g.drawString("w,h: " + history.getCurrent().getWidth() + "," + history.getCurrent().getHeight(), 10, getHeight() - 10);
 
 		int historyPreviewSize = 70;
 		int historyPreviewOffset = 10;
