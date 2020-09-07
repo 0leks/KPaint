@@ -9,6 +9,70 @@ import java.net.*;
 import javax.swing.*;
 
 public class Utils {
+	
+	public enum Edge {
+		NORTH(Cursor.N_RESIZE_CURSOR), 
+		NORTHEAST(Cursor.NE_RESIZE_CURSOR), 
+		NORTHWEST(Cursor.NW_RESIZE_CURSOR), 
+		EAST(Cursor.E_RESIZE_CURSOR), 
+		SOUTH(Cursor.S_RESIZE_CURSOR), 
+		SOUTHEAST(Cursor.SE_RESIZE_CURSOR), 
+		SOUTHWEST(Cursor.SW_RESIZE_CURSOR), 
+		WEST(Cursor.W_RESIZE_CURSOR), 
+		INSIDE(Cursor.MOVE_CURSOR), 
+		OUTSIDE(Cursor.DEFAULT_CURSOR);
+		
+		private int cursorType;
+		private Edge(int cursorType) {
+			this.cursorType = cursorType;
+		}
+		
+		public int getCursorType() {
+			return cursorType;
+		}
+	}
+	
+	public static final Edge isNearEdge(Point point, Rectangle rectangle) {
+		if(rectangle.contains(point)) {
+			return Edge.INSIDE;
+		}
+		int buffer = 10;
+		Edge edge = Edge.OUTSIDE;
+		if(point.y > rectangle.y - buffer && point.y < rectangle.y + rectangle.height + buffer) {
+			if(point.x < rectangle.x && point.x > rectangle.x - buffer) {
+				edge = Edge.WEST;
+			}
+			else if(point.x > rectangle.x + rectangle.width && point.x < rectangle.x + rectangle.width + buffer) {
+				edge = Edge.EAST;
+			}
+		}
+		if(point.x > rectangle.x - buffer && point.x < rectangle.x + rectangle.width + buffer) {
+			if(point.y < rectangle.y && point.y > rectangle.y - buffer) {
+				if(edge == Edge.WEST) {
+					edge = Edge.NORTHWEST;
+				}
+				else if(edge == Edge.EAST) {
+					edge = Edge.NORTHEAST;
+				}
+				else {
+					edge = Edge.NORTH;
+				}
+			}
+			if(point.y > rectangle.y + rectangle.height && point.y < rectangle.y + rectangle.height + buffer) {
+				if(edge == Edge.WEST) {
+					edge = Edge.SOUTHWEST;
+				}
+				else if(edge == Edge.EAST) {
+					edge = Edge.SOUTHEAST;
+				}
+				else {
+					edge = Edge.SOUTH;
+				}
+			}
+		}
+		return edge;
+	}
+	
 	public static final Image getImageFromClipboard() {
 		Transferable transferable = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
 		if (transferable != null && transferable.isDataFlavorSupported(DataFlavor.imageFlavor)) {

@@ -11,6 +11,8 @@ import java.util.*;
 
 import javax.swing.*;
 
+import ok.Utils.*;
+
 public class ImagePanel extends JPanel {
 
 	public enum Mode {
@@ -172,6 +174,11 @@ public class ImagePanel extends JPanel {
 							ipInterface.undo();
 						}
 					}
+					if(e.getKeyCode() == KeyEvent.VK_A) {
+						selectAll();
+						updateSelection();
+						guiInterface.finishedSelection();
+					}
 				}
 				else {
 					if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
@@ -179,6 +186,9 @@ public class ImagePanel extends JPanel {
 					}
 					else if(e.getKeyCode() == KeyEvent.VK_DELETE) {
 						ipInterface.clearSelection();
+					}
+					else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+						ipInterface.resetView();
 					}
 				}
 			}
@@ -196,7 +206,13 @@ public class ImagePanel extends JPanel {
 				}
 				else if(currentMode == Mode.MOVE) {
 					if(selectedRectangle != null) {
-						movingSelection = true;
+						Rectangle sel = getSelectionScreenRectangle();
+						if(sel != null) {
+							Edge edge = Utils.isNearEdge(mousePosition, sel);
+							if(edge == Edge.INSIDE) {
+								movingSelection = true;
+							}
+						}
 					}
 				}
 				else if(currentMode == Mode.SELECT) {
@@ -275,6 +291,23 @@ public class ImagePanel extends JPanel {
 			@Override
 			public void mouseMoved(MouseEvent e) {
 				mousePosition = e.getPoint();
+				int newCursorType = Cursor.DEFAULT_CURSOR;
+				if(currentMode == Mode.SELECT) {
+					newCursorType = Cursor.CROSSHAIR_CURSOR;
+				}
+				Rectangle canvasRect = getCanvasScreenRectangle();
+				Edge canvasEdge = Utils.isNearEdge(mousePosition, canvasRect);
+				if(canvasEdge != Edge.OUTSIDE && canvasEdge != Edge.INSIDE) {
+					newCursorType = canvasEdge.getCursorType();
+				}
+				if(currentMode == Mode.MOVE && selectedRectangle != null) {
+					Rectangle selectionRect = getSelectionScreenRectangle();
+					Edge selectionEdge = Utils.isNearEdge(mousePosition, selectionRect);
+					if(selectionEdge != Edge.OUTSIDE) {
+						newCursorType = selectionEdge.getCursorType();
+					}
+				}
+				ImagePanel.this.setCursor(new Cursor(newCursorType));
 				repaint();
 			}
 		});
@@ -319,8 +352,10 @@ public class ImagePanel extends JPanel {
 		int miny = Math.max(Math.min(one.y, two.y), 0);
 		int maxx = Math.min(Math.max(one.x, two.x), history.getCurrent().getWidth()-1);
 		int maxy = Math.min(Math.max(one.y, two.y), history.getCurrent().getHeight()-1);
-		Rectangle selected = new Rectangle(minx, miny, maxx-minx, maxy-miny);
-		selectedRectangle = selected;
+		selectedRectangle = new Rectangle(minx, miny, maxx-minx, maxy-miny);
+	}
+	public void selectAll() {
+		selectedRectangle = new Rectangle(0, 0, getCurrentImage().getWidth()-1, getCurrentImage().getHeight()-1);
 	}
 	
 	public void updateSelection() {
@@ -350,7 +385,6 @@ public class ImagePanel extends JPanel {
 		if(image != null) {
 			ipInterface.applySelection();
 			selectedImage = Utils.toBufferedImage(image); 
-			BufferedImage curImage = getCurrentImage();
 			selectedRectangle = new Rectangle((int)((getWidth()/2-xOffset)/pixelSize - selectedImage.getWidth()/2), (int)((getHeight()/2-yOffset)/pixelSize - selectedImage.getHeight()/2), selectedImage.getWidth()-1, selectedImage.getHeight()-1);
 			repaint();
 		}
@@ -360,6 +394,17 @@ public class ImagePanel extends JPanel {
 		selectedImage = null;
 		selectedRectangle = null;
 		repaint();
+	}
+	
+	private Rectangle getSelectionScreenRectangle() {
+		if(selectedRectangle != null) {
+			return new Rectangle((int) (selectedRectangle.x*pixelSize+xOffset), (int) (selectedRectangle.y*pixelSize+yOffset), (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1);
+		}
+		return null;
+	}
+	
+	private Rectangle getCanvasScreenRectangle() {
+		return new Rectangle(xOffset, yOffset, (int) (getCurrentImage().getWidth()*pixelSize), (int) (getCurrentImage().getHeight()*pixelSize));
 	}
 	
 	private Rectangle getCanvasSizeWithSelection() {
@@ -531,24 +576,27 @@ public class ImagePanel extends JPanel {
 		super.paintComponent(g);
 		g.setColor(Color.black);
 		g.fillRect(0, 0, getWidth(), getHeight());
-		int stripeWidth = 10;
-		for (int i = 0; i < getWidth(); i += stripeWidth) {
-			g.setColor(new Color((int) (i * 255 / getWidth()),
-					(int) (i * 255 / getWidth() ),
-					(int) (i * 255 / getWidth())));
-			g.fillRect(i, 0, stripeWidth, getHeight());
-		}
 		
 		Graphics2D g2d = (Graphics2D)g;
 		int strokeSize = 2;
 		g2d.setStroke(new BasicStroke(strokeSize));
 		
 		g.translate(xOffset, yOffset);
-		g.drawImage(history.getCurrent(), 0, 0, (int)(history.getCurrent().getWidth()*pixelSize), (int)(history.getCurrent().getHeight()*pixelSize), null);
+		int canvasWidth = (int)(history.getCurrent().getWidth()*pixelSize);
+		int canvasHeight = (int)(history.getCurrent().getHeight()*pixelSize);
+		int stripeWidth = 10;
+		for (int i = 0; i < canvasWidth; i += stripeWidth) {
+			int c = Math.min(Math.max(i + xOffset + i%(i%10 + 1), 0), getWidth());
+			g.setColor(new Color((int) (c * 255 / getWidth()),
+					(int) (c * 255 / getWidth() ),
+					(int) (c * 255 / getWidth())));
+			g.fillRect(i, 0, stripeWidth, canvasHeight);
+		}
+		g.drawImage(history.getCurrent(), 0, 0, canvasWidth, canvasHeight, null);
 		g.setColor(Color.white);
-		g.drawRect(-strokeSize*2, -strokeSize*2, (int)(history.getCurrent().getWidth()*pixelSize) + strokeSize*4, (int)(history.getCurrent().getHeight()*pixelSize) + strokeSize*4);
+		g.drawRect(-strokeSize*2, -strokeSize*2, canvasWidth + strokeSize*4, canvasHeight + strokeSize*4);
 		g.setColor(Color.black);
-		g.drawRect(-strokeSize, -strokeSize, (int)(history.getCurrent().getWidth()*pixelSize) + strokeSize*2, (int)(history.getCurrent().getHeight()*pixelSize) + strokeSize*2);
+		g.drawRect(-strokeSize, -strokeSize, canvasWidth + strokeSize*2, canvasHeight + strokeSize*2);
 
 		if(selectedImage != null) {
 			g.drawImage(selectedImage, (int) (selectedRectangle.x*pixelSize)+1, (int) (selectedRectangle.y*pixelSize)+1, (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1, null);
@@ -557,12 +605,16 @@ public class ImagePanel extends JPanel {
 			g.setColor(Color.gray);
 			g.drawRect((int) (selectedRectangle.x*pixelSize), (int) (selectedRectangle.y*pixelSize), (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1);
 		}
-		if(mousePosition != null) {
+		int indicatorBrushSize = brushSize;
+		if(currentMode == Mode.SELECT) {
+			indicatorBrushSize = 1;
+		}
+		if(mousePosition != null && (currentMode == Mode.BRUSH || currentMode == Mode.FILL || currentMode == Mode.SELECT)) {
 			Point pixelPosition = getPixelPosition(mousePosition);
-			int minx = (int) ((pixelPosition.x - brushSize/2) * pixelSize);
-			int miny = (int) ((pixelPosition.y - brushSize/2) * pixelSize);
-			int maxx = (int) ((pixelPosition.x - brushSize/2 + brushSize) * pixelSize) - 1;
-			int maxy = (int) ((pixelPosition.y - brushSize/2 + brushSize) * pixelSize) - 1;
+			int minx = (int) ((pixelPosition.x - indicatorBrushSize/2) * pixelSize);
+			int miny = (int) ((pixelPosition.y - indicatorBrushSize/2) * pixelSize);
+			int maxx = (int) ((pixelPosition.x - indicatorBrushSize/2 + indicatorBrushSize) * pixelSize) - 1;
+			int maxy = (int) ((pixelPosition.y - indicatorBrushSize/2 + indicatorBrushSize) * pixelSize) - 1;
 			g.setColor(Color.black);
 			g.drawRect(minx, miny, maxx-minx, maxy-miny);
 			g.setColor(Color.white);
@@ -586,7 +638,7 @@ public class ImagePanel extends JPanel {
 		int historyPreviewOffset = 10;
 		for(int i = 0; i < history.getHistory().size(); i++) {
 			g.drawImage(history.getHistory().get(i), getWidth() - historyPreviewOffset - historyPreviewSize, historyPreviewOffset + i*(historyPreviewOffset + historyPreviewSize), historyPreviewSize, historyPreviewSize, null);
-			g.setColor(Color.black);
+			g.setColor(Color.white);
 			g2d.setStroke(new BasicStroke(1));
 			g.drawRect(getWidth() - historyPreviewOffset - historyPreviewSize, historyPreviewOffset + i*(historyPreviewOffset + historyPreviewSize), historyPreviewSize, historyPreviewSize);
 
