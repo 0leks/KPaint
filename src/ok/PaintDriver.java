@@ -71,6 +71,7 @@ public class PaintDriver {
 		}
 		frame = new JFrame("Transparent Paint");
 		frame.setSize((int)(Toolkit.getDefaultToolkit().getScreenSize().width*0.9), (int)(Toolkit.getDefaultToolkit().getScreenSize().height*0.9));
+		frame.setMinimumSize(new Dimension(670, 500));
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLocationRelativeTo(null);
 
@@ -87,11 +88,7 @@ public class PaintDriver {
 		JSlider brushSize = new JSlider(JSlider.HORIZONTAL, min, max, 1);
 		Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
 		for (int i = min; i <= max; i += spacing) {
-			// int size = (int) Math.pow(2, i);
-//			labelTable.put(new Integer(i), new JLabel((i * 2 - 1) + ""));
 			labelTable.put(new Integer(i), new JLabel(i + ""));
-//			i = i - i % spacing;
-			System.out.println(i);
 		}
 		brushSize.setLabelTable(labelTable);
 		brushSize.setPaintLabels(true);
@@ -222,8 +219,14 @@ public class PaintDriver {
 		});
 		controlPanel.add(saveFile);
 
+		frame.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				frameResized();
+			}
+		});
 		frame.add(controlPanel, BorderLayout.NORTH);
-		frame.validate();
+		frameResized();
 		imagePanelInterface.resetView();
 		frame.repaint();
 		imagePanel.requestFocus();
@@ -294,6 +297,20 @@ public class PaintDriver {
 			e.printStackTrace();
 		}
 		return null;
+	}
+	
+	private void frameResized() {
+		SwingUtilities.invokeLater(() -> {
+			if(frame.getWidth() >= 1400) {
+				controlPanel.setPreferredSize(null);
+			}
+			else if (frame.getWidth() <= 1300){
+				controlPanel.setPreferredSize(new Dimension(670, 100));
+			}
+			controlPanel.validate();
+			frame.revalidate();
+			frame.repaint();
+		});
 	}
 
 	public static void main(String[] args) {
