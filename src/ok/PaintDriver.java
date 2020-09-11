@@ -26,6 +26,7 @@ public class PaintDriver {
 	private JButton saveFile;
 
 	private JPanel controlPanel;
+	private GUIInterface guiInterface;
 	
 	private HashMap<Mode, KRadioButton> modeButtons = new HashMap<>();
 
@@ -197,6 +198,45 @@ public class PaintDriver {
 		saveFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				guiInterface.save();
+			}
+		});
+		controlPanel.add(saveFile);
+
+		KButton newFile = setupKButton("New Canvas", "resources/new_canvas.png");
+		newFile.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				imagePanelInterface.newCanvas();
+			}
+		});
+		controlPanel.add(newFile);
+
+		frame.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				frameResized();
+			}
+		});
+		frame.add(controlPanel, BorderLayout.NORTH);
+		frameResized();
+		imagePanelInterface.resetView();
+		frame.repaint();
+		imagePanel.requestFocus();
+		
+		guiInterface = new GUIInterface() {
+			@Override
+			public void finishedSelection() {
+				modeButtons.get(Mode.MOVE).doClick();
+			}
+			@Override
+			public void changedColor() {
+				color1.repaint();
+				color2.repaint();
+				modeButtons.get(Mode.BRUSH).doClick();
+			}
+			@Override
+			public void save() {
 				int returnVal = fc.showSaveDialog(frame);
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					File file = fc.getSelectedFile();
@@ -215,62 +255,6 @@ public class PaintDriver {
 						e1.printStackTrace();
 					}
 				}
-			}
-		});
-		controlPanel.add(saveFile);
-
-		frame.addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentResized(ComponentEvent e) {
-				frameResized();
-			}
-		});
-		frame.add(controlPanel, BorderLayout.NORTH);
-		frameResized();
-		imagePanelInterface.resetView();
-		frame.repaint();
-		imagePanel.requestFocus();
-		
-		GUIInterface guiInterface = new GUIInterface() {
-			@Override
-			public void finishedSelection() {
-				modeButtons.get(Mode.MOVE).doClick();
-			}
-			@Override
-			public void changedColor() {
-				color1.repaint();
-				color2.repaint();
-				modeButtons.get(Mode.BRUSH).doClick();
-			}
-			@Override
-			public void newCanvas(int currentWidth, int currentHeight) {
-				JPanel chooseSize = new JPanel();
-				chooseSize.add(new JLabel("Width:"));
-				JTextField widthField = new JTextField("" + currentWidth, 6);
-				chooseSize.add(widthField);
-				chooseSize.add(new JLabel("Height:"));
-				JTextField heightField = new JTextField("" + currentHeight, 6);
-				chooseSize.add(heightField);
-				for(Component c : chooseSize.getComponents()) {
-					c.setFont(MAIN_FONT);
-				}
-				int result = JOptionPane.showConfirmDialog(frame, chooseSize, "New Canvas", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-				if(result == JOptionPane.OK_OPTION) {
-					try {
-						int width = Integer.parseInt(widthField.getText());
-						int height = Integer.parseInt(heightField.getText());
-						imagePanelInterface.newCanvas(width, height);
-					}
-					catch(NumberFormatException e) {
-						JLabel l = new JLabel("Width and height must be integers.");
-						l.setFont(MAIN_FONT);
-						JOptionPane.showMessageDialog(frame, l, "Error", JOptionPane.ERROR_MESSAGE);
-					}
-				}
-				else if(result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION) {
-					
-				}
-				
 			}
 		};
 		imagePanel.setGUIInterface(guiInterface);

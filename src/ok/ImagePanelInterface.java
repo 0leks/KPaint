@@ -14,5 +14,5 @@ public interface ImagePanelInterface {
 	public void setColor1(Color color1);
 	public void setColor2(Color color2);
 
-	public void newCanvas(int currentWidth, int currentHeight);
+	public void newCanvas();
 }

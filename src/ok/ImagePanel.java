@@ -120,8 +120,30 @@ public class ImagePanel extends JPanel {
 			ImagePanel.this.color2 = color2;
 		}
 		@Override
-		public void newCanvas(int currentWidth, int currentHeight) {
-			resetImage(currentWidth, currentHeight);
+		public void newCanvas() {
+			JPanel chooseSize = new JPanel();
+			chooseSize.add(new JLabel("Width:"));
+			JTextField widthField = new JTextField("" + getCurrentImage().getWidth(), 6);
+			chooseSize.add(widthField);
+			chooseSize.add(new JLabel("Height:"));
+			JTextField heightField = new JTextField("" + getCurrentImage().getHeight(), 6);
+			chooseSize.add(heightField);
+			for(Component c : chooseSize.getComponents()) {
+				c.setFont(PaintDriver.MAIN_FONT);
+			}
+			int result = JOptionPane.showConfirmDialog(ImagePanel.this, chooseSize, "New Canvas", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+			if(result == JOptionPane.OK_OPTION) {
+				try {
+					int width = Integer.parseInt(widthField.getText());
+					int height = Integer.parseInt(heightField.getText());
+					resetImage(width, height);
+				}
+				catch(NumberFormatException e) {
+					JLabel l = new JLabel("Width and height must be integers.");
+					l.setFont(PaintDriver.MAIN_FONT);
+					JOptionPane.showMessageDialog(ImagePanel.this, l, "Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
 		}
 	};
 	
@@ -168,7 +190,10 @@ public class ImagePanel extends JPanel {
 			public void keyReleased(KeyEvent e) {
 				if(e.isControlDown()) {
 					if(e.getKeyCode() == KeyEvent.VK_N) {
-						guiInterface.newCanvas(history.getCurrent().getWidth(), history.getCurrent().getHeight());
+						ipInterface.newCanvas();
+					}
+					if(e.getKeyCode() == KeyEvent.VK_S) {
+						guiInterface.save();
 					}
 					if(e.getKeyCode() == KeyEvent.VK_V) {
 						ipInterface.pasteFromClipboard();
