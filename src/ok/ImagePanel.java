@@ -119,6 +119,10 @@ public class ImagePanel extends JPanel {
 		public void setColor2(Color color2) {
 			ImagePanel.this.color2 = color2;
 		}
+		@Override
+		public void newCanvas(int currentWidth, int currentHeight) {
+			resetImage(currentWidth, currentHeight);
+		}
 	};
 	
 	public ImagePanelInterface getInterface() {
@@ -126,20 +130,13 @@ public class ImagePanel extends JPanel {
 	}
 
 	public void resetImage(int w, int h) {
-		boolean firstTime = history.getCurrent() == null;
-		if(!firstTime) {
-			w = history.getCurrent().getWidth();
-			h = history.getCurrent().getHeight();
-		}
 		BufferedImage defaultImage = new BufferedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics g = defaultImage.getGraphics();
 		g.setColor(new Color(0, 0, 0, 0));
 		g.fillRect(0, 0, defaultImage.getWidth(), defaultImage.getHeight());
 		g.dispose();
 		setImage(defaultImage);
-		if(firstTime) {
-			resetView();
-		}
+		resetView();
 	}
 	public ImagePanel() {
 		resetImage(64, 64);
@@ -171,7 +168,7 @@ public class ImagePanel extends JPanel {
 			public void keyReleased(KeyEvent e) {
 				if(e.isControlDown()) {
 					if(e.getKeyCode() == KeyEvent.VK_N) {
-						resetImage(history.getCurrent().getWidth(), history.getCurrent().getHeight());
+						guiInterface.newCanvas(history.getCurrent().getWidth(), history.getCurrent().getHeight());
 					}
 					if(e.getKeyCode() == KeyEvent.VK_V) {
 						ipInterface.pasteFromClipboard();
