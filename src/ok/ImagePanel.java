@@ -67,7 +67,9 @@ public class ImagePanel extends JPanel {
 	private int yStart;
 	private Point mousePosition = new Point(0, 0);
 	private Point previousMousePosition = new Point(0, 0);
-	private boolean movingImage;
+	private boolean movingCanvas;
+	private Edge resizingCanvas;
+	private Rectangle targetCanvasSize = new Rectangle();
 	private Edge movingSelection;
 	private int mouseButtonDown;
 
@@ -285,13 +287,9 @@ public class ImagePanel extends JPanel {
 			@Override
 			public void mouseDragged(MouseEvent e) {
 				mousePosition = e.getPoint();
-				if (movingImage) {
-					int deltaX = e.getX() - xStart;
-					int deltaY = e.getY() - yStart;
-					xOffset += deltaX;
-					yOffset += deltaY;
-					xStart = e.getX();
-					yStart = e.getY();
+				if (movingCanvas || resizingCanvas != null) {
+					updateCanvasMove(previousMousePosition, mousePosition);
+					previousMousePosition = mousePosition;
 				}
 				else if(movingSelection != null && movingSelection != Edge.OUTSIDE) {
 					Point previousPos = getPixelPosition(previousMousePosition);
@@ -332,6 +330,37 @@ public class ImagePanel extends JPanel {
 				repaint();
 			}
 		});
+	}
+	
+	private void updateCanvasMove(Point previousScreenPos, Point newScreenPos) {
+		if(movingCanvas) {
+			xOffset += newScreenPos.x - previousScreenPos.x;
+			yOffset += newScreenPos.y - previousScreenPos.y;
+		}
+		else if(resizingCanvas != null) {
+			Point previousPos = getPixelPosition(previousScreenPos);
+			Point newPos = getPixelPosition(newScreenPos);
+			if(resizingCanvas == Edge.EAST) {
+				targetCanvasSize.width += newPos.x - previousPos.x;
+				targetCanvasSize.width = Math.max(targetCanvasSize.width, 1);
+			}
+			else if(resizingCanvas == Edge.WEST) {
+				int deltaWidth = previousPos.x - newPos.x;
+				deltaWidth = Math.max(deltaWidth, -(targetCanvasSize.width) + 1);
+				targetCanvasSize.width += deltaWidth;
+				targetCanvasSize.x -= deltaWidth;
+			}
+			else if(resizingCanvas == Edge.SOUTH) {
+				targetCanvasSize.height += newPos.y - previousPos.y;
+				targetCanvasSize.height = Math.max(targetCanvasSize.height, 1);
+			}
+			else if(resizingCanvas == Edge.NORTH) {
+				int deltaHeight = previousPos.y - newPos.y;
+				deltaHeight = Math.max(deltaHeight, -(targetCanvasSize.height) + 1);
+				targetCanvasSize.height += deltaHeight;
+				targetCanvasSize.y -= deltaHeight;
+			}
+		}
 	}
 	
 	private void updateSelectionMove(Point previousPos, Point newPos) {
@@ -426,13 +455,31 @@ public class ImagePanel extends JPanel {
 	}
 	
 	private void startMovingCanvas() {
-		movingImage = true;
-		xStart = mousePosition.x;
-		yStart = mousePosition.y;
+
+		Rectangle canvas = getCanvasScreenRectangle();
+		Edge edge = Utils.isNearEdge(mousePosition, canvas);
+		if(edge == Edge.INSIDE || edge == Edge.OUTSIDE) {
+			movingCanvas = true;
+			xStart = mousePosition.x;
+			yStart = mousePosition.y;
+		}
+		else {
+			targetCanvasSize.x = 0;
+			targetCanvasSize.y = 0;
+			targetCanvasSize.width = getCurrentImage().getWidth();
+			targetCanvasSize.height = getCurrentImage().getHeight();
+			resizingCanvas = edge;
+		}
 	}
 	
 	private void finishMovingCanvas() {
-		movingImage = false;
+		movingCanvas = false;
+		if(resizingCanvas != null) {
+			resizeCanvas(targetCanvasSize);
+			history.pushVersion();
+			repaint();
+		}
+		resizingCanvas = null;
 	}
 	
 	public void setGUIInterface(GUIInterface guiInterface) {
@@ -719,6 +766,10 @@ public class ImagePanel extends JPanel {
 		g.drawRect(-strokeSize*2, -strokeSize*2, canvasWidth + strokeSize*4, canvasHeight + strokeSize*4);
 		g.setColor(Color.black);
 		g.drawRect(-strokeSize, -strokeSize, canvasWidth + strokeSize*2, canvasHeight + strokeSize*2);
+		if(resizingCanvas != null) {
+			g.setColor(Color.red);
+			g.drawRect((int) (targetCanvasSize.x*pixelSize), (int) (targetCanvasSize.y*pixelSize), (int) (targetCanvasSize.width*pixelSize), (int) (targetCanvasSize.height*pixelSize));
+		}
 
 		if(selectedImage != null) {
 			g.drawImage(selectedImage, (int) (selectedRectangle.x*pixelSize)+1, (int) (selectedRectangle.y*pixelSize)+1, (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1, null);
