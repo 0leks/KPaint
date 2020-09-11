@@ -542,6 +542,7 @@ public class ImagePanel extends JPanel {
 		BufferedImage subimage = history.getCurrent().getSubimage(selectedRectangle.x, selectedRectangle.y, selectedRectangle.width + 1, selectedRectangle.height + 1);
 		selectedImage = Utils.copyImage(subimage);
 		brush(new Point(selectedRectangle.x, selectedRectangle.y), new Point(selectedRectangle.x+selectedRectangle.width, selectedRectangle.y + selectedRectangle.height), color2);
+		history.pushVersion();
 		repaint();
 	}
 
@@ -773,9 +774,11 @@ public class ImagePanel extends JPanel {
 
 		if(selectedImage != null) {
 			g.drawImage(selectedImage, (int) (selectedRectangle.x*pixelSize)+1, (int) (selectedRectangle.y*pixelSize)+1, (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1, null);
+			g.setColor(new Color(255, 0, 0, 30));
+			g.fillRect((int) (selectedRectangle.x*pixelSize)+1, (int) (selectedRectangle.y*pixelSize)+1, (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1);
 		}
 		if(selectedRectangle != null) {
-			g.setColor(Color.gray);
+			g.setColor(Color.red);
 			g.drawRect((int) (selectedRectangle.x*pixelSize), (int) (selectedRectangle.y*pixelSize), (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1);
 		}
 		int indicatorBrushSize = brushSize;
