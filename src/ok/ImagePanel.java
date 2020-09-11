@@ -465,13 +465,9 @@ public class ImagePanel extends JPanel {
 			System.out.println("resizing");
 			resizeCanvas(newCanvasSize);
 		}
-		for(int i = 0; i < selectedImage.getWidth(); i++) {
-			for(int j = 0; j < selectedImage.getHeight(); j++) {
-				int x = i + selectedRectangle.x;
-				int y = j + selectedRectangle.y;
-				history.getCurrent().setRGB(x, y, selectedImage.getRGB(i, j));
-			}
-		}
+		Graphics g = getCurrentImage().getGraphics();
+		g.drawImage(selectedImage, selectedRectangle.x, selectedRectangle.y, selectedRectangle.width+1, selectedRectangle.height+1, null);
+		g.dispose();
 		resetSelection();
 		history.pushVersion();
 		repaint();
