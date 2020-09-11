@@ -214,20 +214,23 @@ public class ImagePanel extends JPanel {
 				mouseButtonDown = e.getButton();
 				previousMousePosition = mousePosition;
 				if(mouseButtonDown == MouseEvent.BUTTON2) {
-					movingImage = true;
-					xStart = e.getX();
-					yStart = e.getY();
+					startMovingCanvas();
 				}
 				else if(currentMode == Mode.MOVE) {
+					Edge edge = Edge.OUTSIDE;
 					if(selectedRectangle != null) {
 						Rectangle sel = getSelectionScreenRectangle();
 						if(sel != null) {
-							Edge edge = Utils.isNearEdge(mousePosition, sel);
-							if(edge == Edge.INSIDE) {
-								movingSelection = true;
-							}
+							edge = Utils.isNearEdge(mousePosition, sel);
 						}
 					}
+					if(edge == Edge.OUTSIDE) {
+						startMovingCanvas();
+					}
+					else if(edge == Edge.INSIDE) {
+						movingSelection = true;
+					}
+					 
 				}
 				else if(currentMode == Mode.SELECT) {
 					resetSelection();
@@ -249,10 +252,11 @@ public class ImagePanel extends JPanel {
 					mouseButtonDown = 0;
 				}
 				if (e.getButton() == MouseEvent.BUTTON2) {
-					movingImage = false;
+					finishMovingCanvas();
 				}
 				else if(currentMode == Mode.MOVE) {
 					movingSelection = false;
+					finishMovingCanvas();
 				}
 				else if(currentMode == Mode.SELECT) {
 					updateSelectionRectangle();
@@ -330,6 +334,15 @@ public class ImagePanel extends JPanel {
 		});
 	}
 	
+	private void startMovingCanvas() {
+		movingImage = true;
+		xStart = mousePosition.x;
+		yStart = mousePosition.y;
+	}
+	
+	private void finishMovingCanvas() {
+		movingImage = false;
+	}
 	
 	public void setGUIInterface(GUIInterface guiInterface) {
 		this.guiInterface = guiInterface;
