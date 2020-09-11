@@ -166,7 +166,7 @@ public class PaintDriver {
 			}
 			@Override
 			public void setColor(Color color) {
-				imagePanel.setColor1(color);
+				imagePanelInterface.setColor1(color);
 			}
 		});
 		controlPanel.add(color1);
@@ -178,7 +178,7 @@ public class PaintDriver {
 			}
 			@Override
 			public void setColor(Color color) {
-				imagePanel.setColor2(color);
+				imagePanelInterface.setColor2(color);
 			}
 		});
 		controlPanel.add(color2);
@@ -232,6 +232,12 @@ public class PaintDriver {
 			@Override
 			public void finishedSelection() {
 				modeButtons.get(Mode.MOVE).doClick();
+			}
+			@Override
+			public void changedColor() {
+				color1.repaint();
+				color2.repaint();
+				modeButtons.get(Mode.BRUSH).doClick();
 			}
 		};
 		imagePanel.setGUIInterface(guiInterface);

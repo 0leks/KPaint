@@ -16,7 +16,13 @@ import ok.Utils.*;
 public class ImagePanel extends JPanel {
 
 	public enum Mode {
-		MOVE("Move", "resources/move.png"), SELECT("Select", "resources/select.png"), BRUSH("Brush", "resources/brush.png"), FILL("Fill", "resources/fill.png"), COLOR_SELECT("Matching Color", "resources/color.png");
+		MOVE("Move", "resources/move.png"), 
+		SELECT("Select", "resources/select.png"), 
+		BRUSH("Brush", "resources/brush.png"), 
+		FILL("Fill", "resources/fill.png"), 
+		COLOR_SELECT("Matching Color", "resources/color.png"),
+		COLOR_PICKER("Color Picker", "resources/color_picker.png"),
+		;
 		private String name;
 		private ImageIcon image;
 		Mode(String name, String imageLocation) {
@@ -100,6 +106,14 @@ public class ImagePanel extends JPanel {
 		@Override
 		public void pasteFromClipboard() {
 			ImagePanel.this.pasteFromClipboard();
+		}
+		@Override
+		public void setColor1(Color color1) {
+			ImagePanel.this.color1 = color1;
+		}
+		@Override
+		public void setColor2(Color color2) {
+			ImagePanel.this.color2 = color2;
 		}
 	};
 	
@@ -219,6 +233,9 @@ public class ImagePanel extends JPanel {
 					resetSelection();
 					updateSelectionRectangle();
 				}
+				else if(currentMode == Mode.COLOR_PICKER) {
+					colorPicker(getPixelPosition(mousePosition), mouseButtonDown == MouseEvent.BUTTON3);
+				}
 				else {
 					draw(getPixelPosition(mousePosition), e.isShiftDown());
 				}
@@ -318,6 +335,17 @@ public class ImagePanel extends JPanel {
 		this.guiInterface = guiInterface;
 	}
 	
+	public void colorPicker(Point pixel, boolean rightClick) {
+		Color selected = new Color(getCurrentImage().getRGB(pixel.x, pixel.y), true);
+		if(rightClick) {
+			ipInterface.setColor2(selected);
+		}
+		else {
+			ipInterface.setColor1(selected);
+		}
+		guiInterface.changedColor();
+		repaint();
+	}
 	public void draw(Point pixel, boolean shiftDown) {
 		history.modified();
 		Color setTo = color1;
@@ -553,12 +581,6 @@ public class ImagePanel extends JPanel {
 		repaint();
 	}
 	
-	public void setColor1(Color color1) {
-		this.color1 = color1;
-	}
-	public void setColor2(Color color2) {
-		this.color2 = color2;
-	}
 	public Color getColor1() {
 		return color1;
 	}
@@ -606,10 +628,10 @@ public class ImagePanel extends JPanel {
 			g.drawRect((int) (selectedRectangle.x*pixelSize), (int) (selectedRectangle.y*pixelSize), (int) ((selectedRectangle.width+1)*pixelSize)-1, (int) ((selectedRectangle.height+1)*pixelSize)-1);
 		}
 		int indicatorBrushSize = brushSize;
-		if(currentMode == Mode.SELECT) {
+		if(currentMode == Mode.SELECT || currentMode == Mode.COLOR_PICKER) {
 			indicatorBrushSize = 1;
 		}
-		if(mousePosition != null && (currentMode == Mode.BRUSH || currentMode == Mode.FILL || currentMode == Mode.SELECT)) {
+		if(mousePosition != null && (currentMode == Mode.BRUSH || currentMode == Mode.FILL || currentMode == Mode.COLOR_SELECT || currentMode == Mode.COLOR_PICKER ||currentMode == Mode.SELECT)) {
 			Point pixelPosition = getPixelPosition(mousePosition);
 			int minx = (int) ((pixelPosition.x - indicatorBrushSize/2) * pixelSize);
 			int miny = (int) ((pixelPosition.y - indicatorBrushSize/2) * pixelSize);

@@ -1,5 +1,7 @@
 package ok;
 
+import java.awt.*;
+
 public interface ImagePanelInterface {
 
 	public void undo();
@@ -8,4 +10,7 @@ public interface ImagePanelInterface {
 	public void applySelection();
 	public void clearSelection();
 	public void pasteFromClipboard();
+
+	public void setColor1(Color color1);
+	public void setColor2(Color color2);
 }
