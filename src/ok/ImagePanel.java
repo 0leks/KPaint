@@ -58,7 +58,8 @@ public class ImagePanel extends JPanel {
 			return (x + "," + y).hashCode();
 		}
 	}
-	
+
+	private LinkedList<String> infoStrings = new LinkedList<>();
 	private History history = new History();
 	private volatile BufferedImage selectedImage;
 	private int xOffset;
@@ -634,6 +635,12 @@ public class ImagePanel extends JPanel {
 		Point pixel = new Point();
 		pixel.x = (int) ((screenPos.x - xOffset)/pixelSize);
 		pixel.y = (int) ((screenPos.y - yOffset)/pixelSize);
+		if(screenPos.x - xOffset < 0) {
+			pixel.x -= 1;
+		}
+		if(screenPos.y - yOffset < 0) {
+			pixel.y -= 1;
+		}
 		return pixel;
 	}
 
@@ -799,16 +806,29 @@ public class ImagePanel extends JPanel {
 				g.setColor(Color.green);
 				g.drawString(pixelSize + "", 10, getHeight() - 70);
 				g.drawString(xOffset + "," + yOffset, 10, getHeight() - 50);
-				g.drawString(pixelPosition.x + "," + pixelPosition.y, 10, getHeight() - 30);
-				g.drawString(mousePosition.x + "," + mousePosition.y, 10, getHeight() - 10);
+				g.drawString(mousePosition.x + "," + mousePosition.y, 10, getHeight() - 30);
 			}
+			infoStrings.add("Mouse Position: " + pixelPosition.x + ", " + pixelPosition.y);
 		}
 
+		
+		infoStrings.add("Brush Size: " + brushSize);
+		infoStrings.add("Canvas Size: " + getCurrentImage().getWidth() + ", " + getCurrentImage().getHeight());
+		if(resizingCanvas != null) {
+			infoStrings.add("New Canvas Size: " + targetCanvasSize.width + ", " + targetCanvasSize.height);
+		}
+		if(selectedRectangle != null) {
+			infoStrings.add("Selection Dims: " + selectedRectangle.x + ", " + selectedRectangle.y + ", " + selectedRectangle.width + ", " + selectedRectangle.height);
+		}
 		g.translate(-xOffset, -yOffset);
 		g.setColor(Color.green);
 		g.setFont(PaintDriver.MAIN_FONT);
-		g.drawString("Brush Size: " + brushSize, 10, getHeight() - 25);
-		g.drawString("w,h: " + history.getCurrent().getWidth() + "," + history.getCurrent().getHeight(), 10, getHeight() - 10);
+		int y = 25;
+		for(String s : infoStrings) {
+			g.drawString(s, 10, y);
+			y += PaintDriver.MAIN_FONT.getSize() + 3;
+		}
+		infoStrings.clear();
 
 		int historyPreviewSize = 70;
 		int historyPreviewOffset = 10;

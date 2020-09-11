@@ -14,7 +14,7 @@ import javax.swing.event.*;
 import ok.ImagePanel.*;
 
 public class PaintDriver {
-	public static final Font MAIN_FONT = new Font("Cooper Black", Font.PLAIN, 14);
+	public static final Font MAIN_FONT = new Font("Comic Sans MS", Font.PLAIN, 15);
 	public static final Font MAIN_FONT_BIG = new Font("Cooper Black", Font.PLAIN, 16);
 	public static final boolean DEBUG = false;
 	private JFrame frame;
