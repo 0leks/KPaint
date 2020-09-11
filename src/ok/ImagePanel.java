@@ -1,6 +1,7 @@
 package ok;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -67,7 +68,7 @@ public class ImagePanel extends JPanel {
 	private Point mousePosition = new Point(0, 0);
 	private Point previousMousePosition = new Point(0, 0);
 	private boolean movingImage;
-	private boolean movingSelection;
+	private Edge movingSelection;
 	private int mouseButtonDown;
 
 	private double pixelSize = 1;
@@ -227,8 +228,8 @@ public class ImagePanel extends JPanel {
 					if(edge == Edge.OUTSIDE) {
 						startMovingCanvas();
 					}
-					else if(edge == Edge.INSIDE) {
-						movingSelection = true;
+					else {
+						startMovingSelection(edge);
 					}
 					 
 				}
@@ -255,7 +256,7 @@ public class ImagePanel extends JPanel {
 					finishMovingCanvas();
 				}
 				else if(currentMode == Mode.MOVE) {
-					movingSelection = false;
+					finishMovingSelection();
 					finishMovingCanvas();
 				}
 				else if(currentMode == Mode.SELECT) {
@@ -292,11 +293,10 @@ public class ImagePanel extends JPanel {
 					xStart = e.getX();
 					yStart = e.getY();
 				}
-				else if(movingSelection) {
-					Point previous = getPixelPosition(previousMousePosition);
-					Point pixelPosition = getPixelPosition(mousePosition);
-					selectedRectangle.x += pixelPosition.x - previous.x;
-					selectedRectangle.y += pixelPosition.y - previous.y;
+				else if(movingSelection != null && movingSelection != Edge.OUTSIDE) {
+					Point previousPos = getPixelPosition(previousMousePosition);
+					Point newPos = getPixelPosition(mousePosition);
+					updateSelectionMove(previousPos, newPos);
 					previousMousePosition = mousePosition;
 				}
 				else if(currentMode == Mode.SELECT) {
@@ -332,6 +332,97 @@ public class ImagePanel extends JPanel {
 				repaint();
 			}
 		});
+	}
+	
+	private void updateSelectionMove(Point previousPos, Point newPos) {
+		if(movingSelection == Edge.INSIDE) {
+			selectedRectangle.x += newPos.x - previousPos.x;
+			selectedRectangle.y += newPos.y - previousPos.y;
+		}
+		else if(movingSelection == Edge.EAST) {
+			if(newPos.x > selectedRectangle.x) {
+				selectedRectangle.width = newPos.x - selectedRectangle.x;
+			}
+			else {
+				selectedImage = createFlipped(selectedImage, false);
+				movingSelection = Edge.WEST;
+				selectedRectangle.width = selectedRectangle.x - newPos.x - 1;
+				selectedRectangle.x = newPos.x;
+			}
+		}
+		else if(movingSelection == Edge.WEST) {
+			if(newPos.x < selectedRectangle.x + selectedRectangle.width) {
+				selectedRectangle.width = (selectedRectangle.x + selectedRectangle.width) - newPos.x;
+				selectedRectangle.x = newPos.x;
+			}
+			else {
+				selectedImage = createFlipped(selectedImage, false);
+				movingSelection = Edge.EAST;
+				int newx = selectedRectangle.x + selectedRectangle.width + 1;
+				selectedRectangle.width = newPos.x - (selectedRectangle.x + selectedRectangle.width) - 1;
+				selectedRectangle.x = newx;
+			}
+		}
+		
+		if(movingSelection == Edge.SOUTH) {
+			if(newPos.y > selectedRectangle.y) {
+				selectedRectangle.height = newPos.y - selectedRectangle.y;
+			}
+			else {
+				selectedImage = createFlipped(selectedImage, true);
+				movingSelection = Edge.NORTH;
+				selectedRectangle.height = selectedRectangle.y - newPos.y - 1;
+				selectedRectangle.y = newPos.y;
+			}
+		}
+		else if(movingSelection == Edge.NORTH) {
+			if(newPos.y < selectedRectangle.y + selectedRectangle.height) {
+				selectedRectangle.height = (selectedRectangle.y + selectedRectangle.height) - newPos.y;
+				selectedRectangle.y = newPos.y;
+			}
+			else {
+				selectedImage = createFlipped(selectedImage, true);
+				movingSelection = Edge.SOUTH;
+				int newy = selectedRectangle.y + selectedRectangle.height + 1;
+				selectedRectangle.height = newPos.y - (selectedRectangle.y + selectedRectangle.height) - 1;
+				selectedRectangle.y = newy;
+			}
+		}
+		
+	}
+
+	private static BufferedImage createFlipped(BufferedImage image, boolean northsouth) {
+		AffineTransform at = new AffineTransform();
+		if(northsouth) {
+			at.concatenate(AffineTransform.getScaleInstance(1, -1));
+			at.concatenate(AffineTransform.getTranslateInstance(0, -image.getHeight()));
+		}
+		else {
+			at.concatenate(AffineTransform.getScaleInstance(-1, 1));
+			at.concatenate(AffineTransform.getTranslateInstance(-image.getWidth(), 0));
+		}
+		return createTransformed(image, at);
+	}
+
+	private static BufferedImage createRotated(BufferedImage image) {
+		AffineTransform at = AffineTransform.getRotateInstance(Math.PI, image.getWidth() / 2, image.getHeight() / 2.0);
+		return createTransformed(image, at);
+	}
+
+	private static BufferedImage createTransformed(BufferedImage image, AffineTransform at) {
+		BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = newImage.createGraphics();
+		g.transform(at);
+		g.drawImage(image, 0, 0, null);
+		g.dispose();
+		return newImage;
+	}
+	
+	private void startMovingSelection(Edge edge) {
+		movingSelection = edge;
+	}
+	private void finishMovingSelection() {
+		movingSelection = null;
 	}
 	
 	private void startMovingCanvas() {
