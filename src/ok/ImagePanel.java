@@ -64,15 +64,15 @@ public class ImagePanel extends JPanel {
 	private volatile BufferedImage selectedImage;
 	private int xOffset;
 	private int yOffset;
-	private int xStart;
-	private int yStart;
-	private Point mousePosition = new Point(0, 0);
+//	private Point currentMousePosition = new Point(0, 0);
 	private Point previousMousePosition = new Point(0, 0);
+	private Point startedSelection = new Point(0, 0);
 	private boolean movingCanvas;
 	private Edge resizingCanvas;
 	private Rectangle targetCanvasSize = new Rectangle();
 	private Edge movingSelection;
-	private int mouseButtonDown;
+//	private int mouseButtonDown;
+	private HashSet<Integer> mouseButtonsPressed = new HashSet<>();
 
 	private double pixelSize = 1;
 	private int brushSize = 1;
@@ -167,7 +167,7 @@ public class ImagePanel extends JPanel {
 		this.addMouseWheelListener(new MouseWheelListener() {
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
-				Point pixelPosition = getPixelPosition(mousePosition);
+				Point pixelPosition = getPixelPosition(e.getPoint());
 				pixelPosition.x = Math.max(0, Math.min(pixelPosition.x, history.getCurrent().getWidth()));
 				pixelPosition.y = Math.max(0, Math.min(pixelPosition.y, history.getCurrent().getHeight()));
 				double oldPixelSize = pixelSize;
@@ -236,22 +236,21 @@ public class ImagePanel extends JPanel {
 		this.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				mousePosition = e.getPoint();
-				mouseButtonDown = e.getButton();
-				previousMousePosition = mousePosition;
-				if(mouseButtonDown == MouseEvent.BUTTON2) {
-					startMovingCanvas();
+//				mousePosition = e.getPoint();
+				mouseButtonsPressed.add(e.getButton());
+				if(e.getButton() == MouseEvent.BUTTON2) {
+					startMovingCanvas(e.getPoint());
 				}
 				else if(currentMode == Mode.MOVE) {
 					Edge edge = Edge.OUTSIDE;
 					if(selectedRectangle != null) {
 						Rectangle sel = getSelectionScreenRectangle();
 						if(sel != null) {
-							edge = Utils.isNearEdge(mousePosition, sel);
+							edge = Utils.isNearEdge(e.getPoint(), sel);
 						}
 					}
 					if(edge == Edge.OUTSIDE) {
-						startMovingCanvas();
+						startMovingCanvas(e.getPoint());
 					}
 					else {
 						startMovingSelection(edge);
@@ -260,32 +259,35 @@ public class ImagePanel extends JPanel {
 				}
 				else if(currentMode == Mode.SELECT) {
 					resetSelection();
-					updateSelectionRectangle();
+					startedSelection = e.getPoint();
+					updateSelectionRectangle(e.getPoint());
 				}
 				else if(currentMode == Mode.COLOR_PICKER) {
-					colorPicker(getPixelPosition(mousePosition), mouseButtonDown == MouseEvent.BUTTON3);
+					colorPicker(getPixelPosition(e.getPoint()), e.getButton() == MouseEvent.BUTTON3);
 				}
 				else {
-					draw(getPixelPosition(mousePosition), e.isShiftDown());
+					draw(getPixelPosition(e.getPoint()), e.isShiftDown());
 				}
+				previousMousePosition = e.getPoint();
 				repaint();
 			}
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				mousePosition = e.getPoint();
-				if(e.getButton() == mouseButtonDown) {
-					mouseButtonDown = 0;
-				}
+//				mousePosition = e.getPoint();
+				mouseButtonsPressed.remove(e.getButton());
 				if (e.getButton() == MouseEvent.BUTTON2) {
+					System.out.println("finishMovingCanvas");
 					finishMovingCanvas();
 				}
 				else if(currentMode == Mode.MOVE) {
+					System.out.println("finishMovingSelection & finishMovingCanvas");
 					finishMovingSelection();
 					finishMovingCanvas();
 				}
 				else if(currentMode == Mode.SELECT) {
-					updateSelectionRectangle();
+					System.out.println("finish selection");
+					updateSelectionRectangle(e.getPoint());
 					updateSelection();
 					guiInterface.finishedSelection();
 				}
@@ -293,63 +295,60 @@ public class ImagePanel extends JPanel {
 					history.pushVersion();
 					repaint();
 				}
-				previousMousePosition = mousePosition;
+				previousMousePosition = e.getPoint();
 			}
 			@Override
 			public void mouseEntered(MouseEvent e) {
-				mousePosition = e.getPoint();
+//				mousePosition = e.getPoint();
 				repaint();
 			}
 			@Override
 			public void mouseExited(MouseEvent e) {
-				mousePosition = null;
+//				mousePosition = null;
 				repaint();
 			}
 		});
 		this.addMouseMotionListener(new MouseMotionListener() {
 			@Override
 			public void mouseDragged(MouseEvent e) {
-				mousePosition = e.getPoint();
 				if (movingCanvas || resizingCanvas != null) {
-					updateCanvasMove(previousMousePosition, mousePosition);
-					previousMousePosition = mousePosition;
+					updateCanvasMove(previousMousePosition, e.getPoint());
 				}
 				else if(movingSelection != null && movingSelection != Edge.OUTSIDE) {
 					Point previousPos = getPixelPosition(previousMousePosition);
-					Point newPos = getPixelPosition(mousePosition);
+					Point newPos = getPixelPosition(e.getPoint());
 					updateSelectionMove(previousPos, newPos);
-					previousMousePosition = mousePosition;
 				}
 				else if(currentMode == Mode.SELECT) {
-					updateSelectionRectangle();
+					updateSelectionRectangle(e.getPoint());
 				}
 				else {
-					draw(getPixelPosition(mousePosition), e.isShiftDown());
-					previousMousePosition = mousePosition;
+					draw(getPixelPosition(e.getPoint()), e.isShiftDown());
 				}
+				previousMousePosition = e.getPoint();
 				repaint();
 			}
 
 			@Override
 			public void mouseMoved(MouseEvent e) {
-				mousePosition = e.getPoint();
 				int newCursorType = Cursor.DEFAULT_CURSOR;
 				if(currentMode == Mode.SELECT) {
 					newCursorType = Cursor.CROSSHAIR_CURSOR;
 				}
 				Rectangle canvasRect = getCanvasScreenRectangle();
-				Edge canvasEdge = Utils.isNearEdge(mousePosition, canvasRect);
+				Edge canvasEdge = Utils.isNearEdge(e.getPoint(), canvasRect);
 				if(canvasEdge != Edge.OUTSIDE && canvasEdge != Edge.INSIDE) {
 					newCursorType = canvasEdge.getCursorType();
 				}
 				if(currentMode == Mode.MOVE && selectedRectangle != null) {
 					Rectangle selectionRect = getSelectionScreenRectangle();
-					Edge selectionEdge = Utils.isNearEdge(mousePosition, selectionRect);
+					Edge selectionEdge = Utils.isNearEdge(e.getPoint(), selectionRect);
 					if(selectionEdge != Edge.OUTSIDE) {
 						newCursorType = selectionEdge.getCursorType();
 					}
 				}
 				ImagePanel.this.setCursor(new Cursor(newCursorType));
+				previousMousePosition = e.getPoint();
 				repaint();
 			}
 		});
@@ -359,6 +358,10 @@ public class ImagePanel extends JPanel {
 		if(movingCanvas) {
 			xOffset += newScreenPos.x - previousScreenPos.x;
 			yOffset += newScreenPos.y - previousScreenPos.y;
+			if(startedSelection != null) {
+				startedSelection.x += newScreenPos.x - previousScreenPos.x;
+				startedSelection.y += newScreenPos.y - previousScreenPos.y;
+			}
 		}
 		else if(resizingCanvas != null) {
 			Point previousPos = getPixelPosition(previousScreenPos);
@@ -477,14 +480,12 @@ public class ImagePanel extends JPanel {
 		movingSelection = null;
 	}
 	
-	private void startMovingCanvas() {
+	private void startMovingCanvas(Point mousePosition) {
 
 		Rectangle canvas = getCanvasScreenRectangle();
 		Edge edge = Utils.isNearEdge(mousePosition, canvas);
 		if(edge == Edge.INSIDE || edge == Edge.OUTSIDE) {
 			movingCanvas = true;
-			xStart = mousePosition.x;
-			yStart = mousePosition.y;
 		}
 		else {
 			targetCanvasSize.x = 0;
@@ -521,9 +522,38 @@ public class ImagePanel extends JPanel {
 		repaint();
 	}
 	public void draw(Point pixel, boolean shiftDown) {
+		Point prev = getPixelPosition(previousMousePosition);
+		int deltax = pixel.x - prev.x;
+		int deltay = pixel.y - prev.y;
+		if(Math.abs(deltax) > Math.abs(deltay)) {
+			if(deltax == 0) {
+				drawOnPixel(pixel, shiftDown);
+				return;
+			}
+			int sx = Math.min(pixel.x, prev.x);
+			int fx = Math.max(pixel.x, prev.x);
+			for(int x = sx; x <= fx; x++) {
+				int y = pixel.y + (int) ((double)deltay * (x - sx) / (fx - sx));
+				drawOnPixel(new Point(x, y), shiftDown);
+			}
+		}
+		else {
+			if(deltay == 0) {
+				drawOnPixel(pixel, shiftDown);
+				return;
+			}
+			int sy = Math.min(pixel.y, prev.y);
+			int fy = Math.max(pixel.y, prev.y);
+			for(int y = sy; y <= fy; y++) {
+				int x = pixel.x + (int) ((double)deltax * (y - sy) / (fy - sy));
+				drawOnPixel(new Point(x, y), shiftDown);
+			}
+		}
+	}
+	public void drawOnPixel(Point pixel, boolean shiftDown) {
 		history.modified();
 		Color setTo = color1;
-		if(mouseButtonDown == MouseEvent.BUTTON3) {
+		if(shiftDown) {
 			setTo = color2;
 		}
 		Point lowerBound = new Point(pixel.x - brushSize/2, pixel.y - brushSize/2);
@@ -547,9 +577,9 @@ public class ImagePanel extends JPanel {
 		repaint();
 	}
 	
-	public void updateSelectionRectangle() {
+	public void updateSelectionRectangle(Point mousePosition) {
 		Point one = getPixelPosition(mousePosition);
-		Point two = getPixelPosition(previousMousePosition);
+		Point two = getPixelPosition(startedSelection);
 		int minx = Math.max(Math.min(one.x, two.x), 0);
 		int miny = Math.max(Math.min(one.y, two.y), 0);
 		int maxx = Math.min(Math.max(one.x, two.x), history.getCurrent().getWidth()-1);
@@ -649,6 +679,7 @@ public class ImagePanel extends JPanel {
 	}
 	
 	public void resetSelection() {
+		startedSelection = null;
 		selectedImage = null;
 		selectedRectangle = null;
 	}
@@ -746,10 +777,6 @@ public class ImagePanel extends JPanel {
 			}
 		}
 	}
-
-	public void setMode(int modeIndex) {
-		currentMode = Mode.values()[modeIndex];
-	}
 	public void setMode(Mode mode) {
 		currentMode = mode;
 	}
@@ -814,8 +841,8 @@ public class ImagePanel extends JPanel {
 		if(currentMode == Mode.SELECT || currentMode == Mode.COLOR_PICKER) {
 			indicatorBrushSize = 1;
 		}
-		if(mousePosition != null && (currentMode == Mode.BRUSH || currentMode == Mode.FILL || currentMode == Mode.COLOR_SELECT || currentMode == Mode.COLOR_PICKER ||currentMode == Mode.SELECT)) {
-			Point pixelPosition = getPixelPosition(mousePosition);
+		if(previousMousePosition != null && (currentMode == Mode.BRUSH || currentMode == Mode.FILL || currentMode == Mode.COLOR_SELECT || currentMode == Mode.COLOR_PICKER ||currentMode == Mode.SELECT)) {
+			Point pixelPosition = getPixelPosition(previousMousePosition);
 			int minx = (int) ((pixelPosition.x - indicatorBrushSize/2) * pixelSize);
 			int miny = (int) ((pixelPosition.y - indicatorBrushSize/2) * pixelSize);
 			int maxx = (int) ((pixelPosition.x - indicatorBrushSize/2 + indicatorBrushSize) * pixelSize) - 1;
@@ -828,7 +855,7 @@ public class ImagePanel extends JPanel {
 				g.setColor(Color.green);
 				g.drawString(pixelSize + "", 10, getHeight() - 70);
 				g.drawString(xOffset + "," + yOffset, 10, getHeight() - 50);
-				g.drawString(mousePosition.x + "," + mousePosition.y, 10, getHeight() - 30);
+				g.drawString(previousMousePosition.x + "," + previousMousePosition.y, 10, getHeight() - 30);
 			}
 			infoStrings.add("Mouse Position: " + pixelPosition.x + ", " + pixelPosition.y);
 		}

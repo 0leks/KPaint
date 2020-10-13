@@ -148,7 +148,7 @@ public class PaintDriver {
 			});
 			controlPanel.add(modeButton);
 			group.add(modeButton);
-			if(mode == Mode.BRUSH) {
+			if(mode == Mode.MOVE) {
 				modeButton.setSelected(true);
 				imagePanel.setMode(mode);
 			}
