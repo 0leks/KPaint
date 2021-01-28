@@ -230,6 +230,9 @@ public class ImagePanel extends JPanel {
 					else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
 						ipInterface.resetView();
 					}
+					else if(e.getKeyCode() == KeyEvent.VK_P) {
+						setMode(Mode.COLOR_PICKER);
+					}
 				}
 			}
 		});
@@ -543,7 +546,7 @@ public class ImagePanel extends JPanel {
 				return;
 			}
 			int sy = Math.min(pixel.y, prev.y);
-			int fy = Math.max(pixel.y, prev.y);
+			int fy = Math.max(pixel.y, prev.y); 
 			for(int y = sy; y <= fy; y++) {
 				int x = pixel.x + (int) ((double)deltax * (y - sy) / (fy - sy));
 				drawOnPixel(new Point(x, y), shiftDown);
