@@ -825,7 +825,8 @@ public class ImagePanel extends JPanel {
 			g.setColor(new Color((int) (c * 255 / getWidth()),
 					(int) (c * 255 / getWidth() ),
 					(int) (c * 255 / getWidth())));
-			g.fillRect(i, 0, stripeWidth, canvasHeight);
+			int width = i + stripeWidth > canvasWidth ? canvasWidth - i : stripeWidth;
+			g.fillRect(i, 0, width, canvasHeight);
 		}
 
 		if(showTiling) {
