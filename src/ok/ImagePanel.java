@@ -82,6 +82,8 @@ public class ImagePanel extends JPanel {
 
 	private Mode currentMode;
 	
+	private boolean showTiling;
+	
 	private volatile Rectangle selectedRectangle;
 	private GUIInterface guiInterface;
 	private ImagePanelInterface ipInterface = new ImagePanelInterface() {
@@ -144,6 +146,10 @@ public class ImagePanel extends JPanel {
 					JOptionPane.showMessageDialog(ImagePanel.this, l, "Error", JOptionPane.ERROR_MESSAGE);
 				}
 			}
+		}
+		@Override
+		public void showTiling(boolean enabled) {
+			showTiling = enabled;
 		}
 	};
 	
@@ -266,7 +272,7 @@ public class ImagePanel extends JPanel {
 					updateSelectionRectangle(e.getPoint());
 				}
 				else if(currentMode == Mode.COLOR_PICKER) {
-					colorPicker(getPixelPosition(e.getPoint()), e.getButton() == MouseEvent.BUTTON3);
+					colorPicker(getPixelPosition(e.getPoint()), e.isShiftDown());
 				}
 				else {
 					draw(getPixelPosition(e.getPoint()), e.isShiftDown());
@@ -513,9 +519,9 @@ public class ImagePanel extends JPanel {
 		this.guiInterface = guiInterface;
 	}
 	
-	public void colorPicker(Point pixel, boolean rightClick) {
+	public void colorPicker(Point pixel, boolean shiftDown) {
 		Color selected = new Color(getCurrentImage().getRGB(pixel.x, pixel.y), true);
-		if(rightClick) {
+		if(shiftDown) {
 			ipInterface.setColor2(selected);
 		}
 		else {
@@ -821,11 +827,26 @@ public class ImagePanel extends JPanel {
 					(int) (c * 255 / getWidth())));
 			g.fillRect(i, 0, stripeWidth, canvasHeight);
 		}
+
+		if(showTiling) {
+			g.drawImage(history.getCurrent(), 0, -canvasHeight, canvasWidth, canvasHeight, null);
+			g.drawImage(history.getCurrent(), 0, canvasHeight, canvasWidth, canvasHeight, null);
+			g.drawImage(history.getCurrent(), -canvasWidth, -canvasHeight/2, canvasWidth, canvasHeight, null);
+			g.drawImage(history.getCurrent(), -canvasWidth, +canvasHeight/2, canvasWidth, canvasHeight, null);
+			g.drawImage(history.getCurrent(), +canvasWidth, -canvasHeight/2, canvasWidth, canvasHeight, null);
+			g.drawImage(history.getCurrent(), +canvasWidth, +canvasHeight/2, canvasWidth, canvasHeight, null);
+		}
 		g.drawImage(history.getCurrent(), 0, 0, canvasWidth, canvasHeight, null);
+		
+		int borderStrokeSize = 1;
+		g2d.setStroke(new BasicStroke(borderStrokeSize));
 		g.setColor(Color.white);
-		g.drawRect(-strokeSize*2, -strokeSize*2, canvasWidth + strokeSize*4, canvasHeight + strokeSize*4);
+		g.drawRect(-borderStrokeSize*2, -borderStrokeSize*2, canvasWidth + borderStrokeSize*4, canvasHeight + borderStrokeSize*4);
 		g.setColor(Color.black);
-		g.drawRect(-strokeSize, -strokeSize, canvasWidth + strokeSize*2, canvasHeight + strokeSize*2);
+		g.drawRect(-borderStrokeSize, -borderStrokeSize, canvasWidth + borderStrokeSize*2, canvasHeight + borderStrokeSize*2);
+
+		g2d.setStroke(new BasicStroke(strokeSize));
+		
 		if(resizingCanvas != null) {
 			g.setColor(Color.red);
 			g.drawRect((int) (targetCanvasSize.x*pixelSize), (int) (targetCanvasSize.y*pixelSize), (int) (targetCanvasSize.width*pixelSize), (int) (targetCanvasSize.height*pixelSize));
@@ -870,7 +891,7 @@ public class ImagePanel extends JPanel {
 			infoStrings.add("New Canvas Size: " + targetCanvasSize.width + ", " + targetCanvasSize.height);
 		}
 		if(selectedRectangle != null) {
-			infoStrings.add("Selection Dims: " + selectedRectangle.x + ", " + selectedRectangle.y + ", " + selectedRectangle.width + ", " + selectedRectangle.height);
+			infoStrings.add("Selection Dims: " + selectedRectangle.x + ", " + selectedRectangle.y + ", " + (selectedRectangle.width+1) + ", " + (selectedRectangle.height+1));
 		}
 		g.translate(-xOffset, -yOffset);
 		g.setColor(Color.green);

@@ -132,6 +132,12 @@ public class PaintDriver {
 		});
 		controlPanel.add(applyButton);
 		
+		JToggleButton toggleTiling = setupJToggleButton("Tiling", "resources/tiling_icon.png");
+		toggleTiling.addActionListener(e -> {
+			imagePanelInterface.showTiling(toggleTiling.isSelected());
+		});
+		controlPanel.add(toggleTiling);
+		
 		ButtonGroup group = new ButtonGroup();
 		for(Mode mode : ImagePanel.Mode.values()) {
 			KRadioButton modeButton = new KRadioButton(mode.toString());
@@ -157,7 +163,7 @@ public class PaintDriver {
 		
 		controlPanel.add(brushSize);
 
-		JButton color1 = setupColorButton("Left", new HasColor() {
+		JButton color1 = setupColorButton("Main", new HasColor() {
 			@Override
 			public Color getColor() {
 				return imagePanel.getColor1();
@@ -169,7 +175,7 @@ public class PaintDriver {
 		});
 		controlPanel.add(color1);
 		
-		JButton color2 = setupColorButton("Right", new HasColor() {
+		JButton color2 = setupColorButton("Shift", new HasColor() {
 			@Override
 			public Color getColor() {
 				return imagePanel.getColor2();
@@ -273,6 +279,17 @@ public class PaintDriver {
 	
 	private KButton setupKButton(String text, String iconPath) {
 		KButton button = new KButton(text);
+		button.setIcon(Utils.resizeImageIcon(Utils.loadImageIconResource(iconPath), 32, 32));
+		button.setMargin(new Insets(0, 0, 0, 0));
+		button.setFocusable(false);
+		button.setFocusPainted(false);
+		button.setBackground(Color.black);
+		button.setBorder(BorderFactory.createLineBorder(Color.black, 1));
+		button.setBorderPainted(true);
+		return button;
+	}
+	private JToggleButton setupJToggleButton(String text, String iconPath) {
+		JToggleButton button = new JToggleButton(text);
 		button.setIcon(Utils.resizeImageIcon(Utils.loadImageIconResource(iconPath), 32, 32));
 		button.setMargin(new Insets(0, 0, 0, 0));
 		button.setFocusable(false);

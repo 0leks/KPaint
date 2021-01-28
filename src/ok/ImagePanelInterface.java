@@ -11,6 +11,8 @@ public interface ImagePanelInterface {
 	public void clearSelection();
 	public void pasteFromClipboard();
 
+	public void showTiling(boolean enabled);
+
 	public void setColor1(Color color1);
 	public void setColor2(Color color2);
 
