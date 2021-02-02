@@ -70,7 +70,7 @@ public class PaintDriver {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		frame = new JFrame("Transparent Paint");
+		frame = new JFrame("KPaint 1.0");
 		frame.setSize((int)(Toolkit.getDefaultToolkit().getScreenSize().width*0.9), (int)(Toolkit.getDefaultToolkit().getScreenSize().height*0.9));
 		frame.setMinimumSize(new Dimension(670, 500));
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
