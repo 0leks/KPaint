@@ -4,24 +4,20 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URL;
 import java.util.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.event.*;
 
 import ok.ImagePanel.*;
 
-public class PaintDriver {
+public class KPaintDriver {
 	public static final Font MAIN_FONT = new Font("Comic Sans MS", Font.PLAIN, 15);
 	public static final Font MAIN_FONT_BIG = new Font("Cooper Black", Font.PLAIN, 16);
 	public static final boolean DEBUG = false;
 	private JFrame frame;
 	private ImagePanel imagePanel;
 	private ImagePanelInterface imagePanelInterface;
-//	private JComboBox fillSelect;
-	private JButton setTransparent;
 	private JButton openFile;
 	private JButton saveFile;
 
@@ -64,7 +60,7 @@ public class PaintDriver {
 		return chooseColorButton;
 	}
 
-	public PaintDriver() {
+	public KPaintDriver() {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception ex) {
@@ -89,7 +85,7 @@ public class PaintDriver {
 		JSlider brushSize = new JSlider(JSlider.HORIZONTAL, min, max, 1);
 		Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
 		for (int i = min; i <= max; i += spacing) {
-			labelTable.put(new Integer(i), new JLabel(i + ""));
+			labelTable.put(i, new JLabel(i + ""));
 		}
 		brushSize.setLabelTable(labelTable);
 		brushSize.setPaintLabels(true);
@@ -345,7 +341,7 @@ public class PaintDriver {
 	}
 
 	public static void main(String[] args) {
-		PaintDriver p = new PaintDriver();
+		KPaintDriver p = new KPaintDriver();
 		if (args.length > 0) {
 			p.openImage(args[0]);
 		}

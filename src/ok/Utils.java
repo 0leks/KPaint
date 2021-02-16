@@ -96,7 +96,7 @@ public class Utils {
 	}
 	
 	public static final ImageIcon loadImageIconResource(String location) {
-		URL iconURL = PaintDriver.class.getResource(location);
+		URL iconURL = KPaintDriver.class.getResource(location);
 		if (iconURL != null) {
 			return new ImageIcon(iconURL);
 		}
