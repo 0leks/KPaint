@@ -3,7 +3,7 @@
   <dontWrapJar>false</dontWrapJar>
   <headerType>gui</headerType>
   <jar>E:\Workspace\TransparentPaint\TransparentPaint.jar</jar>
-  <outfile>E:\Workspace\TransparentPaint\TransparentPaint.exe</outfile>
+  <outfile>E:\Workspace\TransparentPaint\TransparentPaint2.exe</outfile>
   <errTitle></errTitle>
   <cmdLine></cmdLine>
   <chdir>.</chdir>
