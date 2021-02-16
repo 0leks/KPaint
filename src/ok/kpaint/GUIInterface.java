@@ -1,4 +1,4 @@
-package ok;
+package ok.kpaint;
 
 public interface GUIInterface {
 

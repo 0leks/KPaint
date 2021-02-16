@@ -1,4 +1,4 @@
-package ok;
+package ok.kpaint;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -9,12 +9,16 @@ import java.util.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
-import ok.ImagePanel.*;
+import ok.*;
+import ok.kpaint.ImagePanel.*;
+import ok.kui.*;
 
 public class KPaintDriver {
 	public static final Font MAIN_FONT = new Font("Comic Sans MS", Font.PLAIN, 15);
 	public static final Font MAIN_FONT_BIG = new Font("Cooper Black", Font.PLAIN, 16);
 	public static final boolean DEBUG = false;
+	
+	
 	private JFrame frame;
 	private ImagePanel imagePanel;
 	private ImagePanelInterface imagePanelInterface;
@@ -24,41 +28,9 @@ public class KPaintDriver {
 	private JPanel controlPanel;
 	private GUIInterface guiInterface;
 	
-	private HashMap<Mode, KRadioButton> modeButtons = new HashMap<>();
+	private HashMap<BrushMode, KRadioButton> modeButtons = new HashMap<>();
 
 	final JFileChooser fc = new JFileChooser(System.getProperty("user.dir"));
-
-	public JButton setupColorButton(String text, HasColor c) {
-		int width = 80;
-		int height = 40;
-		Image backgroundImage = Utils.resizeImageIcon(Utils.loadImageIconResource("resources/transparentBackground.png"), width, height).getImage();
-		JButton chooseColorButton = new JButton(text) {
-			@Override
-			public void paintComponent(Graphics g) {
-				g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
-				g.setColor(c.getColor());
-				g.fillRect(0, 0, getWidth(), getHeight());
-				setForeground(Color.white);
-				g.setFont(MAIN_FONT_BIG);
-				setForeground(Utils.getBestTextColor(c.getColor()));
-				super.paintComponent(g);
-			}
-		};
-		chooseColorButton.setOpaque(false);
-		chooseColorButton.setContentAreaFilled(false);
-		chooseColorButton.setPreferredSize(new Dimension(width, height));
-		chooseColorButton.setFocusable(false);
-		chooseColorButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Color newColor = JColorChooser.showDialog(null, "Choose Color", c.getColor());
-				if(newColor != null) {
-					c.setColor(newColor);
-				}
-			}
-		});
-		return chooseColorButton;
-	}
 
 	public KPaintDriver() {
 		try {
@@ -97,9 +69,9 @@ public class KPaintDriver {
 			imagePanel.setBrushSize(brushSize.getValue());
 		});
 
-		String[] options = new String[ImagePanel.Mode.values().length];
+		String[] options = new String[BrushMode.values().length];
 		for (int i = 0; i < options.length; i++) {
-			options[i] = ImagePanel.Mode.values()[i].toString();
+			options[i] = BrushMode.values()[i].toString();
 		}
 		controlPanel = new JPanel();
 		KButton undoButton = setupKButton("Undo", "resources/undo.png");
@@ -135,7 +107,7 @@ public class KPaintDriver {
 		controlPanel.add(toggleTiling);
 		
 		ButtonGroup group = new ButtonGroup();
-		for(Mode mode : ImagePanel.Mode.values()) {
+		for(BrushMode mode : BrushMode.values()) {
 			KRadioButton modeButton = new KRadioButton(mode.toString());
 			modeButton.setIcon(mode.getImageIcon());
 			modeButton.setBorder(BorderFactory.createLineBorder(Color.black, 1));
@@ -145,21 +117,21 @@ public class KPaintDriver {
 			modeButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					imagePanel.setMode(mode);
+					imagePanel.setBrushMode(mode);
 				}
 			});
 			controlPanel.add(modeButton);
 			group.add(modeButton);
-			if(mode == Mode.MOVE) {
+			if(mode == BrushMode.MOVE) {
 				modeButton.setSelected(true);
-				imagePanel.setMode(mode);
+				imagePanel.setBrushMode(mode);
 			}
 			modeButtons.put(mode, modeButton);
 		}
 		
 		controlPanel.add(brushSize);
 
-		JButton color1 = setupColorButton("Main", new HasColor() {
+		JButton color1 = KBrushColorButton.setupColorButton("Main", new HasColor() {
 			@Override
 			public Color getColor() {
 				return imagePanel.getColor1();
@@ -171,7 +143,7 @@ public class KPaintDriver {
 		});
 		controlPanel.add(color1);
 		
-		JButton color2 = setupColorButton("Shift", new HasColor() {
+		JButton color2 = KBrushColorButton.setupColorButton("Shift", new HasColor() {
 			@Override
 			public Color getColor() {
 				return imagePanel.getColor2();
@@ -229,13 +201,13 @@ public class KPaintDriver {
 		guiInterface = new GUIInterface() {
 			@Override
 			public void finishedSelection() {
-				modeButtons.get(Mode.MOVE).doClick();
+				modeButtons.get(BrushMode.MOVE).doClick();
 			}
 			@Override
 			public void changedColor() {
 				color1.repaint();
 				color2.repaint();
-				modeButtons.get(Mode.BRUSH).doClick();
+				modeButtons.get(BrushMode.BRUSH).doClick();
 			}
 			@Override
 			public void save() {

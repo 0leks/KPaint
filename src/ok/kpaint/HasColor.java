@@ -1,4 +1,4 @@
-package ok;
+package ok.kpaint;
 
 import java.awt.*;
 

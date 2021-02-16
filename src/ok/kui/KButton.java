@@ -1,4 +1,4 @@
-package ok;
+package ok.kui;
 
 import java.awt.*;
 import java.awt.event.*;
