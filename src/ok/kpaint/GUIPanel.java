@@ -27,7 +27,7 @@ public class GUIPanel extends JPanel {
 	private ButtonGroup setupModeButtons() {
 		ButtonGroup group = new ButtonGroup();
 		for(BrushMode mode : BrushMode.values()) {
-			KRadioButton modeButton = KUI.setupKRadioButton("", mode.toString(), mode.getImageIcon());
+			KRadioButton modeButton = KUI.setupKRadioButton("", mode.getTooltipText(), mode.getImageIcon());
 			modeButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -57,7 +57,7 @@ public class GUIPanel extends JPanel {
 			}
 		});
 
-		KButton saveFile = KUI.setupKButton("", "Save File", "resources/save.png");
+		KButton saveFile = KUI.setupKButton("", "(Ctrl S) Save File", "resources/save.png");
 		saveFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -66,7 +66,7 @@ public class GUIPanel extends JPanel {
 		});
 
 
-		KButton newFile = KUI.setupKButton("", "New Canvas", "resources/new_canvas.png");
+		KButton newFile = KUI.setupKButton("", "(Ctrl N) New Canvas", "resources/new_canvas.png");
 		newFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -75,7 +75,7 @@ public class GUIPanel extends JPanel {
 		});
 		
 		
-		KButton undoButton = KUI.setupKButton("", "Undo", "resources/undo.png");
+		KButton undoButton = KUI.setupKButton("", "(Ctrl Z) Undo", "resources/undo.png");
 		undoButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -83,7 +83,7 @@ public class GUIPanel extends JPanel {
 			}
 		});
 
-		KButton redoButton = KUI.setupKButton("", "Redo", "resources/redo.png");
+		KButton redoButton = KUI.setupKButton("", "(Ctrl Shift Z) Redo", "resources/redo.png");
 		redoButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -91,9 +91,7 @@ public class GUIPanel extends JPanel {
 			}
 		});
 		
-
-		
-		KButton applyButton = KUI.setupKButton("", "Apply Selection", "resources/apply.png");
+		KButton applyButton = KUI.setupKButton("", "(Esc) Apply Selection: pastes the floating selection onto the image.", "resources/apply.png");
 		applyButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -101,7 +99,7 @@ public class GUIPanel extends JPanel {
 			}
 		});
 
-		JToggleButton toggleTiling = KUI.setupKToggleButton("", "Tiling", "resources/tiling_icon.png");
+		JToggleButton toggleTiling = KUI.setupKToggleButton("", "Tiling: enables tiling view which draws copies of the image around it for working on seemless textures", "resources/tiling_icon.png");
 		toggleTiling.addActionListener(e -> {
 			imagePanelInterface.showTiling(toggleTiling.isSelected());
 		});

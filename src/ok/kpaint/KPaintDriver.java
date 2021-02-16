@@ -86,14 +86,6 @@ public class KPaintDriver {
 		guiPanel.setup();
 		frame.add(guiPanel, BorderLayout.WEST);
 
-		frame.addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentResized(ComponentEvent e) {
-				frameResized();
-			}
-		});
-//		frame.add(controlPanel, BorderLayout.NORTH);
-		frameResized();
 		imagePanelInterface.resetView();
 		frame.repaint();
 		imagePanel.requestFocus();
@@ -156,9 +148,9 @@ public class KPaintDriver {
 		}
 		return null;
 	}
-	
-	private void frameResized() {
-		// old stuff from when gui was a bar at the top of the app
+
+	// old stuff from when gui was a bar at the top of the app
+//	private void frameResized() {
 //		SwingUtilities.invokeLater(() -> {
 //			if(frame.getWidth() >= 1400) {
 //				controlPanel.setPreferredSize(null);
@@ -170,7 +162,7 @@ public class KPaintDriver {
 //			frame.revalidate();
 //			frame.repaint();
 //		});
-	}
+//	}
 
 	public static void main(String[] args) {
 		KPaintDriver p = new KPaintDriver();
