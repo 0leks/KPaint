@@ -52,11 +52,6 @@ public class ImagePanel extends JPanel {
 
 	private double pixelSize = 1;
 	private Brush brush = new Brush(1, BrushMode.MOVE);
-
-	public void setBrushSize(int brushSize) {
-		brush.setBrushSize(brushSize);
-		repaint();
-	}
 	public void setBrushMode(BrushMode mode) {
 		brush.setMode(mode);
 	}
@@ -68,6 +63,7 @@ public class ImagePanel extends JPanel {
 	
 	private volatile Rectangle selectedRectangle;
 	private GUIInterface guiInterface;
+	private ControllerInterface controllerInterface;
 	private ImagePanelInterface ipInterface = new ImagePanelInterface() {
 		@Override
 		public void undo() {
@@ -94,6 +90,14 @@ public class ImagePanel extends JPanel {
 		@Override
 		public void pasteFromClipboard() {
 			ImagePanel.this.pasteFromClipboard();
+		}
+		@Override
+		public Color getColor1() {
+			return ImagePanel.this.color1;
+		}
+		@Override
+		public Color getColor2() {
+			return ImagePanel.this.color2;
 		}
 		@Override
 		public void setColor1(Color color1) {
@@ -132,6 +136,15 @@ public class ImagePanel extends JPanel {
 		@Override
 		public void showTiling(boolean enabled) {
 			showTiling = enabled;
+		}
+		@Override
+		public void setBrushSize(int size) {
+			brush.setBrushSize(size);
+			repaint();
+		}
+		@Override
+		public void setBrushMode(BrushMode mode) {
+			brush.setMode(mode);
 		}
 	};
 	
@@ -181,7 +194,7 @@ public class ImagePanel extends JPanel {
 						ipInterface.newCanvas();
 					}
 					if(e.getKeyCode() == KeyEvent.VK_S) {
-						guiInterface.save();
+						controllerInterface.save();
 					}
 					if(e.getKeyCode() == KeyEvent.VK_V) {
 						ipInterface.pasteFromClipboard();
@@ -499,6 +512,9 @@ public class ImagePanel extends JPanel {
 	
 	public void setGUIInterface(GUIInterface guiInterface) {
 		this.guiInterface = guiInterface;
+	}
+	public void setControllerInterface(ControllerInterface controllerInterface) {
+		this.controllerInterface = controllerInterface;
 	}
 	
 	public void colorPicker(Point pixel, boolean shiftDown) {

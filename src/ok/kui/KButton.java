@@ -5,6 +5,8 @@ import java.awt.event.*;
 
 import javax.swing.*;
 
+import ok.kpaint.*;
+
 public class KButton extends JButton {
 	
 	public static final Color DEFAULT_COLOR = new Color(240, 240, 240);

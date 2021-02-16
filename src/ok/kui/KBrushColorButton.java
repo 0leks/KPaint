@@ -30,26 +30,4 @@ public class KBrushColorButton extends JButton {
 		setForeground(Utils.getBestTextColor(hasColor.getColor()));
 		super.paintComponent(g);
 	}
-
-	public static JButton setupColorButton(String text, HasColor c) {
-		int width = 80;
-		int height = 40;
-		Image background = Utils.resizeImageIcon(
-				Utils.loadImageIconResource("resources/transparentBackground.png"), width, height).getImage();
-		JButton chooseColorButton = new KBrushColorButton(text, c, background);
-		chooseColorButton.setOpaque(false);
-		chooseColorButton.setContentAreaFilled(false);
-		chooseColorButton.setPreferredSize(new Dimension(width, height));
-		chooseColorButton.setFocusable(false);
-		chooseColorButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Color newColor = JColorChooser.showDialog(null, "Choose Color", c.getColor());
-				if(newColor != null) {
-					c.setColor(newColor);
-				}
-			}
-		});
-		return chooseColorButton;
-	}
 }
