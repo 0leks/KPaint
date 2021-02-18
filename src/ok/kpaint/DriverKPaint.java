@@ -115,8 +115,13 @@ public class DriverKPaint {
 				}
 			}
 		});
+		
+		
+		
+		
 		frame.repaint();
 		frame.revalidate();
+		imagePanelInterface.resetView();
 	}
 	
 	private String getExtension(String filename) {

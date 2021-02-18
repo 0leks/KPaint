@@ -155,16 +155,16 @@ public class ImagePanel extends JPanel {
 	public void resetImage(int w, int h) {
 		BufferedImage defaultImage = new BufferedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics g = defaultImage.getGraphics();
-		g.setColor(new Color(0, 0, 0, 0));
+		g.setColor(color2);
 		g.fillRect(0, 0, defaultImage.getWidth(), defaultImage.getHeight());
 		g.dispose();
 		setImage(defaultImage);
 		resetView();
 	}
 	public ImagePanel() {
-		resetImage(64, 64);
 		color1 = Color.black;
-		color2 = new Color(0, 0, 0, 0);
+		color2 = Color.white;
+		resetImage(512, 512);
 		this.addMouseWheelListener(new MouseWheelListener() {
 			@Override
 			public void mouseWheelMoved(MouseWheelEvent e) {
