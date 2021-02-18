@@ -26,7 +26,7 @@ public class KBrushColorButton extends JButton {
 		g.setColor(hasColor.getColor());
 		g.fillRect(0, 0, getWidth(), getHeight());
 		setForeground(Color.white);
-		g.setFont(KPaintDriver.MAIN_FONT_BIG);
+		g.setFont(DriverKPaint.MAIN_FONT_BIG);
 		setForeground(Utils.getBestTextColor(hasColor.getColor()));
 		super.paintComponent(g);
 	}

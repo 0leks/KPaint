@@ -47,7 +47,6 @@ public class GUIPanel extends JPanel {
 	
 	public void setup() {
 		setupModeButtons();
-		GridBagConstraints c = new GridBagConstraints();
 
 		KButton openFile = KUI.setupKButton("", "Open File", "resources/open.png");
 		openFile.addActionListener(new ActionListener() {
@@ -105,24 +104,10 @@ public class GUIPanel extends JPanel {
 		});
 
 		// ############ ROW 4 ################## 
-		int min = 1;
-		int max = 21;
-		int spacing = 4;
-		JSlider brushSize = new JSlider(JSlider.HORIZONTAL, min, max, 1);
-		Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
-		for (int i = min; i <= max; i += spacing) {
-			labelTable.put(i, new JLabel(i + ""));
-		}
-		brushSize.setLabelTable(labelTable);
-		brushSize.setPaintLabels(true);
-		brushSize.setMajorTickSpacing(spacing);
-		brushSize.setPaintTicks(true);
-		brushSize.setFocusable(false);
-		brushSize.addChangeListener(e -> {
-			// int size = (int) Math.pow(2, brushSize.getValue());
-			imagePanelInterface.setBrushSize(brushSize.getValue());
+		KSlider brushSize2 = new KSlider(1, 10);
+		brushSize2.addChangeListener(e -> {
+			imagePanelInterface.setBrushSize(brushSize2.getValue());
 		});
-		
 
 		JButton brushColor1 = KUI.setupColorButton("Main", new HasColor() {
 			@Override
@@ -149,6 +134,8 @@ public class GUIPanel extends JPanel {
 		JPanel fillerPanel = new JPanel();
 		fillerPanel.setOpaque(false);
 
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.BOTH;
 		// ############ ROW 0 ################## 
 		c.gridx = 0; c.gridy = 0;
 		this.add(openFile, c);
@@ -185,7 +172,7 @@ public class GUIPanel extends JPanel {
 
 		// ############ ROW 4 ################## 
 		c.gridx = 0; c.gridy = 4; c.gridwidth = 5;
-		this.add(brushSize, c);
+		this.add(brushSize2, c);
 		c.gridwidth = 1;
 		
 

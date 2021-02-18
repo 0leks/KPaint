@@ -13,7 +13,7 @@ import ok.*;
 import ok.kpaint.ImagePanel.*;
 import ok.kui.*;
 
-public class KPaintDriver {
+public class DriverKPaint {
 	public static final Font MAIN_FONT = new Font("Comic Sans MS", Font.PLAIN, 15);
 	public static final Font MAIN_FONT_BIG = new Font("Cooper Black", Font.PLAIN, 16);
 	public static final boolean DEBUG = false;
@@ -29,7 +29,7 @@ public class KPaintDriver {
 
 	final JFileChooser fc = new JFileChooser(System.getProperty("user.dir"));
 
-	public KPaintDriver() {
+	public DriverKPaint() {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception ex) {
@@ -165,7 +165,7 @@ public class KPaintDriver {
 //	}
 
 	public static void main(String[] args) {
-		KPaintDriver p = new KPaintDriver();
+		DriverKPaint p = new DriverKPaint();
 		if (args.length > 0) {
 			p.openImage(args[0]);
 		}

@@ -117,7 +117,7 @@ public class ImagePanel extends JPanel {
 			JTextField heightField = new JTextField("" + getCurrentImage().getHeight(), 6);
 			chooseSize.add(heightField);
 			for(Component c : chooseSize.getComponents()) {
-				c.setFont(KPaintDriver.MAIN_FONT);
+				c.setFont(DriverKPaint.MAIN_FONT);
 			}
 			int result = JOptionPane.showConfirmDialog(ImagePanel.this, chooseSize, "New Canvas", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			if(result == JOptionPane.OK_OPTION) {
@@ -128,7 +128,7 @@ public class ImagePanel extends JPanel {
 				}
 				catch(NumberFormatException e) {
 					JLabel l = new JLabel("Width and height must be integers.");
-					l.setFont(KPaintDriver.MAIN_FONT);
+					l.setFont(DriverKPaint.MAIN_FONT);
 					JOptionPane.showMessageDialog(ImagePanel.this, l, "Error", JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -866,7 +866,7 @@ public class ImagePanel extends JPanel {
 			g.drawRect(minx, miny, maxx-minx, maxy-miny);
 			g.setColor(Color.white);
 			g.drawRect(minx + strokeSize, miny + strokeSize, maxx-minx - strokeSize*2, maxy-miny - strokeSize*2);
-			if(KPaintDriver.DEBUG) {
+			if(DriverKPaint.DEBUG) {
 				g.setColor(Color.green);
 				g.drawString(pixelSize + "", 10, getHeight() - 70);
 				g.drawString(xOffset + "," + yOffset, 10, getHeight() - 50);
@@ -886,11 +886,11 @@ public class ImagePanel extends JPanel {
 		}
 		g.translate(-xOffset, -yOffset);
 		g.setColor(Color.green);
-		g.setFont(KPaintDriver.MAIN_FONT);
+		g.setFont(DriverKPaint.MAIN_FONT);
 		int y = 25;
 		for(String s : infoStrings) {
 			g.drawString(s, 10, y);
-			y += KPaintDriver.MAIN_FONT.getSize() + 3;
+			y += DriverKPaint.MAIN_FONT.getSize() + 3;
 		}
 		infoStrings.clear();
 
