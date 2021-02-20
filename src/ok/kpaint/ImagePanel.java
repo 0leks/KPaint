@@ -528,32 +528,36 @@ public class ImagePanel extends JPanel {
 		guiInterface.changedColor();
 		repaint();
 	}
-	public void draw(Point pixel, boolean shiftDown) {
-		Point prev = getPixelPosition(previousMousePosition);
-		int deltax = pixel.x - prev.x;
-		int deltay = pixel.y - prev.y;
+	public void draw(Point currentPixel, boolean shiftDown) {
+		Point previousPixel = getPixelPosition(previousMousePosition);
+		int deltax = currentPixel.x - previousPixel.x;
+		int deltay = currentPixel.y - previousPixel.y;
+		if(Math.abs(deltax) <= 1 && Math.abs(deltay) <= 1) {
+			drawOnPixel(currentPixel, shiftDown);
+			return;
+		}
 		if(Math.abs(deltax) > Math.abs(deltay)) {
-			if(deltax == 0) {
-				drawOnPixel(pixel, shiftDown);
-				return;
+			if(currentPixel.x < previousPixel.x) {
+				Point temp = currentPixel;
+				currentPixel = previousPixel;
+				previousPixel = temp;
 			}
-			int sx = Math.min(pixel.x, prev.x);
-			int fx = Math.max(pixel.x, prev.x);
-			for(int x = sx; x <= fx; x++) {
-				int y = pixel.y + (int) ((double)deltay * (x - sx) / (fx - sx));
-				drawOnPixel(new Point(x, y), shiftDown);
+			for(int x = previousPixel.x; x <= currentPixel.x; x++) {
+				double ratio = (double)(x - previousPixel.x) / (currentPixel.x - previousPixel.x);
+				int yy = (int) (previousPixel.y + (currentPixel.y - previousPixel.y) * ratio);
+				drawOnPixel(new Point(x, yy), shiftDown);
 			}
 		}
 		else {
-			if(deltay == 0) {
-				drawOnPixel(pixel, shiftDown);
-				return;
+			if(currentPixel.y < previousPixel.y) {
+				Point temp = currentPixel;
+				currentPixel = previousPixel;
+				previousPixel = temp;
 			}
-			int sy = Math.min(pixel.y, prev.y);
-			int fy = Math.max(pixel.y, prev.y); 
-			for(int y = sy; y <= fy; y++) {
-				int x = pixel.x + (int) ((double)deltax * (y - sy) / (fy - sy));
-				drawOnPixel(new Point(x, y), shiftDown);
+			for(int y = previousPixel.y; y <= currentPixel.y; y++) {
+				double ratio = (double)(y - previousPixel.y) / (currentPixel.y - previousPixel.y);
+				int xx = (int)(previousPixel.x + (currentPixel.x - previousPixel.x) * ratio);
+				drawOnPixel(new Point(xx, y), shiftDown);
 			}
 		}
 	}
