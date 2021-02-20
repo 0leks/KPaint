@@ -129,7 +129,7 @@ public class KSlider extends JPanel {
 			}
 		});
 		this.setLayout(new BorderLayout());
-		this.add(text, BorderLayout.EAST);
+//		this.add(text, BorderLayout.EAST);
 		this.add(slider, BorderLayout.CENTER);
 		
 		setValue(1);

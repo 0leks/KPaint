@@ -17,7 +17,7 @@ public class KButton extends JButton {
 	private boolean hovered = false;
 	private boolean pressed = false;
 	
-	private Image backgroundImage;
+//	private Image backgroundImage;
 	
 	public KButton(String name) {
 		super(name);
@@ -47,7 +47,7 @@ public class KButton extends JButton {
 	}
 	@Override
 	public void paintComponent(Graphics g) {
-		g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
+//		g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
 		if(isSelected()) {
 			setBackground(SELECTED_COLOR);
 		}

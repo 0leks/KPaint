@@ -14,6 +14,19 @@ public class GUIPanel extends JPanel {
 	private ImagePanelInterface imagePanelInterface;
 	private HashMap<BrushMode, KRadioButton> modeButtons = new HashMap<>();
 	
+
+	private KButton openFile;
+	private KButton saveFile;
+	private KButton newFile;
+	private KButton undoButton;
+	private KButton redoButton;
+	private KButton applyButton;
+	private JToggleButton toggleTiling;
+	private KSlider brushSize2;
+	private JButton brushColor1;
+	private JButton brushColor2;
+	private JPanel fillerPanel;
+	
 	public GUIPanel(ControllerInterface controllerInterface, ImagePanelInterface imagePanelInterface) {
 		this.controllerInterface = controllerInterface;
 		this.imagePanelInterface = imagePanelInterface;
@@ -24,10 +37,10 @@ public class GUIPanel extends JPanel {
 		modeButtons.get(mode).doClick();
 	}
 	
-	private ButtonGroup setupModeButtons() {
+	private ButtonGroup setupModeButtons(boolean withTitles) {
 		ButtonGroup group = new ButtonGroup();
 		for(BrushMode mode : BrushMode.values()) {
-			KRadioButton modeButton = KUI.setupKRadioButton("", mode.getTooltipText(), mode.getImageIcon());
+			KRadioButton modeButton = KUI.setupKRadioButton(withTitles ? mode.toString() : "", mode.getTooltipText(), mode.getImageIcon());
 			modeButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -43,12 +56,11 @@ public class GUIPanel extends JPanel {
 		}
 		return group;
 	}
-
 	
-	public void setup() {
-		setupModeButtons();
+	private void createGUIElements(boolean withTitles) {
+		setupModeButtons(withTitles);
 
-		KButton openFile = KUI.setupKButton("", "Open File", "resources/open.png");
+		openFile = KUI.setupKButton(withTitles ? "Open File" : "", "Open File", "resources/open.png");
 		openFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -56,7 +68,7 @@ public class GUIPanel extends JPanel {
 			}
 		});
 
-		KButton saveFile = KUI.setupKButton("", "(Ctrl S) Save File", "resources/save.png");
+		saveFile = KUI.setupKButton(withTitles ? "Save File" : "", "(Ctrl S) Save File", "resources/save.png");
 		saveFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -65,7 +77,7 @@ public class GUIPanel extends JPanel {
 		});
 
 
-		KButton newFile = KUI.setupKButton("", "(Ctrl N) New Canvas", "resources/new_canvas.png");
+		newFile = KUI.setupKButton(withTitles ? "New Canvas" : "", "(Ctrl N) New Canvas", "resources/new_canvas.png");
 		newFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -74,7 +86,7 @@ public class GUIPanel extends JPanel {
 		});
 		
 		
-		KButton undoButton = KUI.setupKButton("", "(Ctrl Z) Undo", "resources/undo.png");
+		undoButton = KUI.setupKButton("", "(Ctrl Z) Undo", "resources/undo.png");
 		undoButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -82,7 +94,7 @@ public class GUIPanel extends JPanel {
 			}
 		});
 
-		KButton redoButton = KUI.setupKButton("", "(Ctrl Shift Z) Redo", "resources/redo.png");
+		redoButton = KUI.setupKButton("", "(Ctrl Shift Z) Redo", "resources/redo.png");
 		redoButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -90,7 +102,7 @@ public class GUIPanel extends JPanel {
 			}
 		});
 		
-		KButton applyButton = KUI.setupKButton("", "(Esc) Apply Selection: pastes the floating selection onto the image.", "resources/apply.png");
+		applyButton = KUI.setupKButton(withTitles ? "Apply Selection" : "", "(Esc) Apply Selection: pastes the floating selection onto the image.", "resources/apply.png");
 		applyButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -98,18 +110,17 @@ public class GUIPanel extends JPanel {
 			}
 		});
 
-		JToggleButton toggleTiling = KUI.setupKToggleButton("", "Tiling: enables tiling view which draws copies of the image around it for working on seemless textures", "resources/tiling_icon.png");
+		toggleTiling = KUI.setupKToggleButton(withTitles ? "Tiling" : "", "Tiling: enables tiling view which draws copies of the image around it for working on seemless textures", "resources/tiling_icon.png");
 		toggleTiling.addActionListener(e -> {
 			imagePanelInterface.showTiling(toggleTiling.isSelected());
 		});
 
-		// ############ ROW 4 ################## 
-		KSlider brushSize2 = new KSlider(1, 10);
+		brushSize2 = new KSlider(1, 10);
 		brushSize2.addChangeListener(e -> {
 			imagePanelInterface.setBrushSize(brushSize2.getValue());
 		});
 
-		JButton brushColor1 = KUI.setupColorButton("Main", new HasColor() {
+		brushColor1 = KUI.setupColorButton("Main", new HasColor() {
 			@Override
 			public Color getColor() {
 				return imagePanelInterface.getColor1();
@@ -120,7 +131,7 @@ public class GUIPanel extends JPanel {
 			}
 		});
 
-		JButton brushColor2 = KUI.setupColorButton("Shift", new HasColor() {
+		brushColor2 = KUI.setupColorButton("Shift", new HasColor() {
 			@Override
 			public Color getColor() {
 				return imagePanelInterface.getColor2();
@@ -131,8 +142,109 @@ public class GUIPanel extends JPanel {
 			}
 		});
 
-		JPanel fillerPanel = new JPanel();
+		fillerPanel = new JPanel();
 		fillerPanel.setOpaque(false);
+	}
+	
+	private JPanel getSeparator(int height, Color color) {
+		JPanel sep = new JPanel() {
+			@Override
+			public void paintComponent(Graphics g) {
+				super.paintComponent(g);
+//				g.setColor(Color.black);
+//				g.drawLine(0, getHeight()/2, getWidth()-1, getHeight()/2);
+			}
+		};
+		sep.setBorder(BorderFactory.createLineBorder(Color.black, 1));
+		sep.setBackground(color);
+		sep.setPreferredSize(new Dimension(100, height));
+		return sep;
+	}
+	
+	public void setupWithTitles() {
+		this.removeAll();
+		createGUIElements(true);
+		
+		int row = 0;
+		
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.BOTH;
+		c.gridwidth = 2;
+		c.weightx = 1;
+		
+		// ############ ROW 0 ################## 
+		c.gridx = 0; c.gridy = row++; c.weighty = 1;
+		this.add(getSeparator(20, Color.white), c);
+		c.weighty = 0;
+		c.gridx = 0; c.gridy = row++;
+		this.add(openFile, c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(saveFile, c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(newFile, c);
+		
+		// ############ ROW 1 ################## 
+		c.gridx = 0; c.gridy = row++; c.weighty = 1;
+		this.add(getSeparator(20, Color.white), c);
+		c.weighty = 0;
+		c.gridx = 0; c.gridy = row; c.gridwidth = 1;
+		this.add(undoButton, c);
+		c.gridx = 1; c.gridy = row++;
+		this.add(redoButton, c);
+		c.gridwidth = 2;
+		
+		// ############ ROW 2 ################## 
+		c.gridx = 0; c.gridy = row++; c.weighty = 1;
+		this.add(getSeparator(20, Color.white), c);
+		c.weighty = 0;
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.SELECT), c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(applyButton, c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(toggleTiling, c);
+		
+		// ############ ROW 3 ################## 
+		c.gridx = 0; c.gridy = row++; c.weighty = 1;
+		this.add(getSeparator(20, Color.white), c);
+		c.weighty = 0;
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.MOVE), c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.BRUSH), c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.FILL), c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.ALL_MATCHING_COLOR), c);
+
+		// ############ ROW 4 ################## 
+		c.gridx = 0; c.gridy = row++;
+		this.add(brushSize2, c);
+
+		// ############ ROW 5 ################## 
+		c.gridx = 0; c.gridy = row++; c.weighty = 1;
+		this.add(getSeparator(20, Color.white), c);
+		c.weighty = 0;
+		c.gridx = 0; c.gridy = row++;
+		this.add(brushColor1, c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(brushColor2, c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.COLOR_PICKER), c);
+
+		// ############ FILLER ################## 
+		c.gridx = 0; c.gridy = row++; c.weightx = 1; c.weighty = 5;
+		c.fill = GridBagConstraints.BOTH;
+		this.add(getSeparator(20, Color.white), c);
+		
+		this.revalidate();
+	}
+	
+	public void setupCompact() {
+		this.removeAll();
+		createGUIElements(false);
+		
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.BOTH;
@@ -194,6 +306,6 @@ public class GUIPanel extends JPanel {
 		c.fill = GridBagConstraints.BOTH;
 		this.add(fillerPanel, c);
 		
-		this.validate();
+		this.revalidate();
 	}
 }

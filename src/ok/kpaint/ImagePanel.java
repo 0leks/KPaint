@@ -190,6 +190,12 @@ public class ImagePanel extends JPanel {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				if(e.isControlDown()) {
+					if(e.getKeyCode() == KeyEvent.VK_1) {
+						guiInterface.switchLayout(true);
+					}
+					if(e.getKeyCode() == KeyEvent.VK_2) {
+						guiInterface.switchLayout(false);
+					}
 					if(e.getKeyCode() == KeyEvent.VK_N) {
 						ipInterface.newCanvas();
 					}

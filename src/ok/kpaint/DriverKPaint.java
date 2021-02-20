@@ -83,7 +83,7 @@ public class DriverKPaint {
 		frame.add(imagePanel, BorderLayout.CENTER);
 		
 		GUIPanel guiPanel = new GUIPanel(controllerInterface, imagePanelInterface);
-		guiPanel.setup();
+		guiPanel.setupWithTitles();
 		frame.add(guiPanel, BorderLayout.WEST);
 
 		imagePanelInterface.resetView();
@@ -103,6 +103,15 @@ public class DriverKPaint {
 			@Override
 			public void changeModeHotkey(BrushMode mode) {
 				guiPanel.clickModeButton(mode);
+			}
+			@Override
+			public void switchLayout(boolean withTitles) {
+				if(withTitles) {
+					guiPanel.setupWithTitles();
+				}
+				else {
+					guiPanel.setupCompact();
+				}
 			}
 		};
 		

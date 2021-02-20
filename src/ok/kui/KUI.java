@@ -20,6 +20,7 @@ public class KUI {
 			button.setFocusPainted(false);
 			button.setBorderPainted(true);
 			button.setIcon(icon);
+			button.setHorizontalAlignment(SwingConstants.CENTER);
 		}
 	}
 

@@ -6,4 +6,5 @@ public interface GUIInterface {
 	public void changedColor();
 	
 	public void changeModeHotkey(BrushMode mode);
+	public void switchLayout(boolean withTitles);
 }
