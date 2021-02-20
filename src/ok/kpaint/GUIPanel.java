@@ -21,7 +21,7 @@ public class GUIPanel extends JPanel {
 	}
 	
 	public void clickModeButton(BrushMode mode) {
-		modeButtons.get(BrushMode.MOVE).doClick();
+		modeButtons.get(mode).doClick();
 	}
 	
 	private ButtonGroup setupModeButtons() {
@@ -168,7 +168,7 @@ public class GUIPanel extends JPanel {
 		c.gridx = 2; c.gridy = 3;
 		this.add(modeButtons.get(BrushMode.FILL), c);
 		c.gridx = 3; c.gridy = 3;
-		this.add(modeButtons.get(BrushMode.COLOR_SELECT), c);
+		this.add(modeButtons.get(BrushMode.ALL_MATCHING_COLOR), c);
 
 		// ############ ROW 4 ################## 
 		c.gridx = 0; c.gridy = 4; c.gridwidth = 5;

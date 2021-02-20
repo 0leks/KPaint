@@ -232,7 +232,22 @@ public class ImagePanel extends JPanel {
 						ipInterface.resetView();
 					}
 					else if(e.getKeyCode() == KeyEvent.VK_P) {
-						brush.setMode(BrushMode.COLOR_PICKER);
+						guiInterface.changeModeHotkey(BrushMode.COLOR_PICKER);
+					}
+					else if(e.getKeyCode() == KeyEvent.VK_M) {
+						guiInterface.changeModeHotkey(BrushMode.MOVE);
+					}
+					else if(e.getKeyCode() == KeyEvent.VK_S) {
+						guiInterface.changeModeHotkey(BrushMode.SELECT);
+					}
+					else if(e.getKeyCode() == KeyEvent.VK_B) {
+						guiInterface.changeModeHotkey(BrushMode.BRUSH);
+					}
+					else if(e.getKeyCode() == KeyEvent.VK_F) {
+						guiInterface.changeModeHotkey(BrushMode.FILL);
+					}
+					else if(e.getKeyCode() == KeyEvent.VK_A) {
+						guiInterface.changeModeHotkey(BrushMode.ALL_MATCHING_COLOR);
 					}
 				}
 			}
@@ -340,9 +355,11 @@ public class ImagePanel extends JPanel {
 					newCursorType = Cursor.CROSSHAIR_CURSOR;
 				}
 				Rectangle canvasRect = getCanvasScreenRectangle();
-				Edge canvasEdge = Utils.isNearEdge(e.getPoint(), canvasRect);
-				if(canvasEdge != Edge.OUTSIDE && canvasEdge != Edge.INSIDE) {
-					newCursorType = canvasEdge.getCursorType();
+				if(brush.getMode() == BrushMode.MOVE) {
+					Edge canvasEdge = Utils.isNearEdge(e.getPoint(), canvasRect);
+					if(canvasEdge != Edge.OUTSIDE && canvasEdge != Edge.INSIDE) {
+						newCursorType = canvasEdge.getCursorType();
+					}
 				}
 				if(brush.getMode() == BrushMode.MOVE && selectedRectangle != null) {
 					Rectangle selectionRect = getSelectionScreenRectangle();
@@ -575,7 +592,7 @@ public class ImagePanel extends JPanel {
 		upperBound.x = Math.min(upperBound.x, history.getCurrent().getWidth()-1);
 		upperBound.y = Math.min(upperBound.y, history.getCurrent().getHeight()-1);
 		
-		if (brush.getMode() == BrushMode.COLOR_SELECT) {
+		if (brush.getMode() == BrushMode.ALL_MATCHING_COLOR) {
 			matchColorDraw(lowerBound, upperBound, setTo);
 		} 
 		else if (brush.getMode() == BrushMode.FILL) {
@@ -860,7 +877,7 @@ public class ImagePanel extends JPanel {
 		if(brush.getMode() == BrushMode.SELECT || brush.getMode() == BrushMode.COLOR_PICKER) {
 			indicatorBrushSize = 1;
 		}
-		if(previousMousePosition != null && (brush.getMode() == BrushMode.BRUSH || brush.getMode() == BrushMode.FILL || brush.getMode() == BrushMode.COLOR_SELECT || brush.getMode() == BrushMode.COLOR_PICKER || brush.getMode() == BrushMode.SELECT)) {
+		if(previousMousePosition != null && (brush.getMode() == BrushMode.BRUSH || brush.getMode() == BrushMode.FILL || brush.getMode() == BrushMode.ALL_MATCHING_COLOR || brush.getMode() == BrushMode.COLOR_PICKER || brush.getMode() == BrushMode.SELECT)) {
 			Point pixelPosition = getPixelPosition(previousMousePosition);
 			int minx = (int) ((pixelPosition.x - indicatorBrushSize/2) * pixelSize);
 			int miny = (int) ((pixelPosition.y - indicatorBrushSize/2) * pixelSize);

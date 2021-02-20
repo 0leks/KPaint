@@ -100,6 +100,10 @@ public class DriverKPaint {
 				frame.repaint();
 				guiPanel.clickModeButton(BrushMode.BRUSH);
 			}
+			@Override
+			public void changeModeHotkey(BrushMode mode) {
+				guiPanel.clickModeButton(mode);
+			}
 		};
 		
 		imagePanel.setGUIInterface(guiInterface);
