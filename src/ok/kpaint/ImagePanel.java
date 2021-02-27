@@ -637,7 +637,13 @@ public class ImagePanel extends JPanel {
 	public void resizeCanvas(Rectangle newSize) {
 		BufferedImage newImage = new BufferedImage(newSize.width, newSize.height, BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics g = newImage.getGraphics();
-		g.drawImage(history.getCurrent(), -newSize.x, -newSize.y, null);
+		g.setColor(color2);
+		g.fillRect(0, 0, -newSize.x, newImage.getHeight());
+		g.fillRect(0, 0, newImage.getWidth(), -newSize.y);
+		BufferedImage currentImage = history.getCurrent();
+		g.fillRect(-newSize.x + currentImage.getWidth(), 0, newImage.getWidth(), newImage.getHeight());
+		g.fillRect(0, -newSize.y + currentImage.getHeight(), newImage.getWidth(), newImage.getHeight());
+		g.drawImage(currentImage, -newSize.x, -newSize.y, null);
 		g.dispose();
 		history.setCurrentImage(newImage);
 		if(selectedRectangle != null) {
