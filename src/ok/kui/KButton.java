@@ -1,11 +1,13 @@
-package ok;
+package ok.kui;
 
 import java.awt.*;
 import java.awt.event.*;
 
 import javax.swing.*;
 
-public class KRadioButton extends JRadioButton {
+import ok.kpaint.*;
+
+public class KButton extends JButton {
 	
 	public static final Color DEFAULT_COLOR = new Color(240, 240, 240);
 	public static final Color HOVERED_COLOR = new Color(220, 220, 220);
@@ -15,10 +17,11 @@ public class KRadioButton extends JRadioButton {
 	private boolean hovered = false;
 	private boolean pressed = false;
 	
-	private Image backgroundImage;
+//	private Image backgroundImage;
 	
-	public KRadioButton(String name) {
+	public KButton(String name) {
 		super(name);
+		this.setContentAreaFilled(false);
 		addMouseListener(new MouseListener() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -44,7 +47,7 @@ public class KRadioButton extends JRadioButton {
 	}
 	@Override
 	public void paintComponent(Graphics g) {
-		g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
+//		g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
 		if(isSelected()) {
 			setBackground(SELECTED_COLOR);
 		}
@@ -57,6 +60,8 @@ public class KRadioButton extends JRadioButton {
 		else {
 			setBackground(DEFAULT_COLOR);
 		}
+		g.setColor(getBackground());
+		g.fillRect(0, 0, getWidth(), getHeight());
 		super.paintComponent(g);
 	}
 }

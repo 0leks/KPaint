@@ -1,4 +1,4 @@
-package ok;
+package ok.kpaint;
 
 import java.awt.*;
 import java.awt.datatransfer.*;
@@ -96,7 +96,7 @@ public class Utils {
 	}
 	
 	public static final ImageIcon loadImageIconResource(String location) {
-		URL iconURL = KPaintDriver.class.getResource(location);
+		URL iconURL = DriverKPaint.class.getResource(location);
 		if (iconURL != null) {
 			return new ImageIcon(iconURL);
 		}
