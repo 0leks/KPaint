@@ -83,37 +83,14 @@ public class DriverKPaint {
 		frame.add(imagePanel, BorderLayout.CENTER);
 		
 		GUIPanel guiPanel = new GUIPanel(controllerInterface, imagePanelInterface);
-		guiPanel.setupWithTitles();
+		guiInterface = guiPanel.getInterface();
+		guiInterface.switchLayout(true);
 		frame.add(guiPanel, BorderLayout.WEST);
 
 		imagePanelInterface.resetView();
 		frame.repaint();
 		imagePanel.requestFocus();
 		
-		guiInterface = new GUIInterface() {
-			@Override
-			public void finishedSelection() {
-				guiPanel.clickModeButton(BrushMode.MOVE);
-			}
-			@Override
-			public void changedColor() {
-				frame.repaint();
-				guiPanel.clickModeButton(BrushMode.BRUSH);
-			}
-			@Override
-			public void changeModeHotkey(BrushMode mode) {
-				guiPanel.clickModeButton(mode);
-			}
-			@Override
-			public void switchLayout(boolean withTitles) {
-				if(withTitles) {
-					guiPanel.setupWithTitles();
-				}
-				else {
-					guiPanel.setupCompact();
-				}
-			}
-		};
 		
 		imagePanel.setGUIInterface(guiInterface);
 		imagePanel.setControllerInterface(controllerInterface);
@@ -128,9 +105,6 @@ public class DriverKPaint {
 				}
 			}
 		});
-		
-		
-		
 		
 		frame.repaint();
 		frame.revalidate();

@@ -25,7 +25,34 @@ public class GUIPanel extends JPanel {
 	private KSlider brushSize2;
 	private JButton brushColor1;
 	private JButton brushColor2;
+	private ColorSwatches swatchesPanel;
 	private JPanel fillerPanel;
+	
+	private GUIInterface guiInterface = new GUIInterface() {
+		@Override
+		public void finishedSelection() {
+			clickModeButton(BrushMode.MOVE);
+		}
+		@Override
+		public void changedColor(Color newColor) {
+			swatchesPanel.choseColor(newColor);
+			clickModeButton(BrushMode.BRUSH);
+			repaint();
+		}
+		@Override
+		public void changeModeHotkey(BrushMode mode) {
+			clickModeButton(mode);
+		}
+		@Override
+		public void switchLayout(boolean withTitles) {
+			if(withTitles) {
+				setupWithTitles();
+			}
+			else {
+				setupCompact();
+			}
+		}
+	};
 	
 	public GUIPanel(ControllerInterface controllerInterface, ImagePanelInterface imagePanelInterface) {
 		this.controllerInterface = controllerInterface;
@@ -33,7 +60,11 @@ public class GUIPanel extends JPanel {
 		this.setLayout(new GridBagLayout());
 	}
 	
-	public void clickModeButton(BrushMode mode) {
+	public GUIInterface getInterface() {
+		return guiInterface;
+	}
+	
+	private void clickModeButton(BrushMode mode) {
 		modeButtons.get(mode).doClick();
 	}
 	
@@ -141,6 +172,8 @@ public class GUIPanel extends JPanel {
 				imagePanelInterface.setColor2(color);
 			}
 		});
+		
+		swatchesPanel = new ColorSwatches(imagePanelInterface);
 
 		fillerPanel = new JPanel();
 		fillerPanel.setOpaque(false);
@@ -161,7 +194,7 @@ public class GUIPanel extends JPanel {
 		return sep;
 	}
 	
-	public void setupWithTitles() {
+	private void setupWithTitles() {
 		this.removeAll();
 		createGUIElements(true);
 		
@@ -233,6 +266,9 @@ public class GUIPanel extends JPanel {
 		c.gridx = 0; c.gridy = row++;
 		this.add(modeButtons.get(BrushMode.COLOR_PICKER), c);
 
+		c.gridx = 0; c.gridy = row++;
+		this.add(swatchesPanel, c);
+
 		// ############ FILLER ################## 
 		c.gridx = 0; c.gridy = row++; c.weightx = 1; c.weighty = 5;
 		c.fill = GridBagConstraints.BOTH;
@@ -241,7 +277,7 @@ public class GUIPanel extends JPanel {
 		this.revalidate();
 	}
 	
-	public void setupCompact() {
+	private void setupCompact() {
 		this.removeAll();
 		createGUIElements(false);
 		

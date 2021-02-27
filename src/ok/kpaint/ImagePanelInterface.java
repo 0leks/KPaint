@@ -2,6 +2,9 @@ package ok.kpaint;
 
 import java.awt.*;
 
+/**
+ * Actions that can occur on the from the gui that need to have effect on the image panel.
+ */
 public interface ImagePanelInterface {
 
 	public void undo();

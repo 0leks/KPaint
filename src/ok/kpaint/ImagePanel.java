@@ -50,6 +50,7 @@ public class ImagePanel extends JPanel {
 	private Edge movingSelection;
 	private HashSet<Integer> mouseButtonsPressed = new HashSet<>();
 
+	/** AKA zoom level */
 	private double pixelSize = 1;
 	private Brush brush = new Brush(1, BrushMode.MOVE);
 	public void setBrushMode(BrushMode mode) {
@@ -102,10 +103,12 @@ public class ImagePanel extends JPanel {
 		@Override
 		public void setColor1(Color color1) {
 			ImagePanel.this.color1 = color1;
+			guiInterface.changedColor(color1);
 		}
 		@Override
 		public void setColor2(Color color2) {
 			ImagePanel.this.color2 = color2;
+			guiInterface.changedColor(color2);
 		}
 		@Override
 		public void newCanvas() {
@@ -548,7 +551,6 @@ public class ImagePanel extends JPanel {
 		else {
 			ipInterface.setColor1(selected);
 		}
-		guiInterface.changedColor();
 		repaint();
 	}
 	public void draw(Point currentPixel, boolean shiftDown) {
