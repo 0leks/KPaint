@@ -18,6 +18,8 @@ public class DriverKPaint {
 	public static final Font MAIN_FONT_BIG = new Font("Cooper Black", Font.PLAIN, 16);
 	public static final boolean DEBUG = false;
 	
+	public static final String TITLE = "KPaint 1.1";
+	
 	
 	private JFrame frame;
 	private ImagePanel imagePanel;
@@ -60,7 +62,9 @@ public class DriverKPaint {
 					}
 					BufferedImage current = imagePanel.getCurrentImage();
 					try {
+						System.out.println("Writing ext " + ext);
 						ImageIO.write(current, ext, file);
+						frame.setTitle(TITLE + " " + file.getAbsolutePath());
 					} catch (IOException e1) {
 						System.err.println("FileName = " + path);
 						e1.printStackTrace();
@@ -69,7 +73,7 @@ public class DriverKPaint {
 			}
 		};
 		
-		frame = new JFrame("KPaint 1.1");
+		frame = new JFrame(TITLE);
 		frame.setSize((int)(Toolkit.getDefaultToolkit().getScreenSize().width*0.9), (int)(Toolkit.getDefaultToolkit().getScreenSize().height*0.9));
 		frame.setMinimumSize(new Dimension(670, 500));
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -124,6 +128,7 @@ public class DriverKPaint {
 		if (image != null) {
 			imagePanel.setImage(image);
 			imagePanelInterface.resetView();
+			frame.setTitle(TITLE + " " + path);
 		}
 	}
 

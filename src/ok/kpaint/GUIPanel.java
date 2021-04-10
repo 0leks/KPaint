@@ -284,6 +284,7 @@ public class GUIPanel extends JPanel {
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.BOTH;
+		c.weightx = 1;
 		// ############ ROW 0 ################## 
 		c.gridx = 0; c.gridy = 0;
 		this.add(openFile, c);
@@ -332,10 +333,14 @@ public class GUIPanel extends JPanel {
 		c.gridwidth = 1;
 		c.gridx = 4; c.gridy = 5;
 		this.add(modeButtons.get(BrushMode.COLOR_PICKER), c);
+		
+		c.gridx = 0; c.gridy = 6; c.gridwidth = 5;
+		this.add(swatchesPanel, c);
 
 
 		c.gridx = 0; c.gridy = 6; c.gridwidth = 4;
 		this.add(new JSeparator(), c);
+
 		
 		// ############ FILLER ################## 
 		c.gridx = 0; c.gridy = 7; c.weightx = 1; c.weighty = 1;
