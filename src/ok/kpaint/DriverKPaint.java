@@ -50,26 +50,7 @@ public class DriverKPaint {
 			
 			@Override
 			public void save() {
-				int returnVal = fc.showSaveDialog(frame);
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					File file = fc.getSelectedFile();
-					String path = file.getAbsolutePath();
-					String ext = getExtension(path);
-					if(ext == null) {
-						ext = "png";
-						file = new File(path + "." + ext);
-//						JOptionPane.showMessageDialog(frame, "Failed to save, no file extension specified");
-					}
-					BufferedImage current = imagePanel.getCurrentImage();
-					try {
-						System.out.println("Writing ext " + ext);
-						ImageIO.write(current, ext, file);
-						frame.setTitle(TITLE + " " + file.getAbsolutePath());
-					} catch (IOException e1) {
-						System.err.println("FileName = " + path);
-						e1.printStackTrace();
-					}
-				}
+				saveImage();
 			}
 		};
 		
@@ -117,10 +98,10 @@ public class DriverKPaint {
 	
 	private String getExtension(String filename) {
 		int lastDot = filename.lastIndexOf(".");
-		if(lastDot == -1) {
-			return null;
+		if(lastDot == -1 || lastDot == filename.length() - 1) {
+			return "";
 		}
-		return filename.substring(lastDot+1);
+		return filename.substring(lastDot + 1);
 	}
 
 	private void openImage(String path) {
@@ -128,8 +109,34 @@ public class DriverKPaint {
 		if (image != null) {
 			imagePanel.setImage(image);
 			imagePanelInterface.resetView();
-			frame.setTitle(TITLE + " " + path);
+			updateTitle(path);
 		}
+	}
+	
+	private void saveImage() {
+		int returnVal = fc.showSaveDialog(frame);
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			File file = fc.getSelectedFile();
+			String path = file.getAbsolutePath();
+			String ext = getExtension(path);
+			if(!ext.toLowerCase().equals("png")) {
+				ext = "png";
+				file = new File(file.getAbsolutePath() + "." + ext);
+				JOptionPane.showMessageDialog(frame, "ERROR! Can only write png files.\nSaving to " + file.getAbsolutePath());
+			}
+			BufferedImage current = imagePanel.getCurrentImage();
+			try {
+				ImageIO.write(current, ext, file);
+				updateTitle(file.getAbsolutePath());
+			} catch (IOException e1) {
+				System.err.println("FileName = " + path);
+				e1.printStackTrace();
+			}
+		}
+	}
+	
+	private void updateTitle(String filename) {
+		frame.setTitle(TITLE + "     " + filename);
 	}
 
 	public BufferedImage loadImage(String fileName) {
@@ -145,21 +152,6 @@ public class DriverKPaint {
 		}
 		return null;
 	}
-
-	// old stuff from when gui was a bar at the top of the app
-//	private void frameResized() {
-//		SwingUtilities.invokeLater(() -> {
-//			if(frame.getWidth() >= 1400) {
-//				controlPanel.setPreferredSize(null);
-//			}
-//			else if (frame.getWidth() <= 1300){
-//				controlPanel.setPreferredSize(new Dimension(670, 100));
-//			}
-//			controlPanel.validate();
-//			frame.revalidate();
-//			frame.repaint();
-//		});
-//	}
 
 	public static void main(String[] args) {
 		DriverKPaint p = new DriverKPaint();
