@@ -5,7 +5,7 @@ import java.util.*;
 
 public class History {
 
-	private static final int MAX_HISTORY_SIZE = 10;
+	private static final int MAX_HISTORY_SIZE = 40;
 	private int historyCursor = 0;
 	private LinkedList<BufferedImage> history = new LinkedList<>();
 	private boolean modified;

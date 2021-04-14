@@ -24,6 +24,7 @@ public interface ImagePanelInterface {
 	public void newCanvas();
 	
 	public void setBrushSize(int size);
+	public void setBrushShape(BrushShape shape);
 	public void setBrushMode(BrushMode mode);
 
 }
