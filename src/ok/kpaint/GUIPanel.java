@@ -175,6 +175,7 @@ public class GUIPanel extends JPanel {
 		});
 		
 		swatchesPanel = new ColorSwatches(imagePanelInterface);
+		swatchesPanel.setFocusable(false);
 		
 		brushShape = new JComboBox<>(BrushShape.values());
 		KUI.setupJComponent(brushShape, "Changes brush shape between square and circle", Utils.resizeImageIcon(Utils.loadImageIconResource("resources/brush_shape.png"), 32, 32));
