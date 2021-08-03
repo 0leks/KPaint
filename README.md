@@ -1,4 +1,4 @@
-# KPaint 1.2 alpha
+# KPaint 1.2 beta
 
 ## Controls
 - Left mouse to draw, do actions, or use layer handles.
@@ -11,17 +11,16 @@
 - CTRL+V pastes clipboard contents on a new layer
 - CTRL+C copies entire canvas to clipboard
 - CTRL+D duplicates selected layer
+- CTRL+Z/CTRL+SHIFT+Z undo/redo
 - SPACEBAR resets the camera view
 - SHIFT swaps main color with alt color
 - P switches to color picker
-- E switches to extract mode
 - B switches to brush
 - F switches to fill
 - A switches to matching color mode
 
-
 ## Removed Features
-- UNDO/REDO
+- extract mode
 
 ## New Features
 - Added Layers feature
