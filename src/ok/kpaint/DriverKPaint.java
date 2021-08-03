@@ -160,7 +160,7 @@ public class DriverKPaint {
 	}
 	
 	private void startWithPath(String filename) {
-		if(filename != null && !openImage(filename)) {
+		if(filename == null || !openImage(filename)) {
 			BufferedImage image = new BufferedImage(Layer.DEFAULT_SIZE, Layer.DEFAULT_SIZE, BufferedImage.TYPE_INT_ARGB);
 			imagePanel.addImageLayer(image);
 			imagePanelInterface.resetView();

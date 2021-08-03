@@ -189,12 +189,14 @@ public class Layer {
 	}
 	
 	public void reflectImage(boolean horizontal) {
-		image = Utils.createFlipped(image, !horizontal);
+		Edit e = makeReplaceImageEdit(Utils.createFlipped(image, !horizontal), position);
+		History.push(e.getInverse());
+		e.apply();
 	}
 	
 	public void draw(Vec2i pixel, Brush brush) {
 		
-		Vec2i drawAt = pixel.subtract(position);//new Vec2i(pixel.x - position.x, pixel.y - position.y);
+		Vec2i drawAt = pixel.subtract(position);
 		
 		if (brush.getMode() == BrushMode.ALL_MATCHING_COLOR) {
 			matchColorDraw(drawAt, brush);
