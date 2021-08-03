@@ -1,6 +1,10 @@
 testimage.jpg
+test.png
+.settings/
 *.class
 *.exe
+jre/
+*.zip
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/

@@ -2,9 +2,9 @@
 <launch4jConfig>
   <dontWrapJar>false</dontWrapJar>
   <headerType>gui</headerType>
-  <jar>E:\Workspace\KPaint\KPaint.jar</jar>
-  <outfile>E:\Workspace\KPaint\KPaint.exe</outfile>
-  <errTitle></errTitle>
+  <jar>W:\KPaint\KPaint.jar</jar>
+  <outfile>W:\KPaint\KPaint.exe</outfile>
+  <errTitle>Failed to find jre. Perhaps it was moved or deleted?</errTitle>
   <cmdLine></cmdLine>
   <chdir>.</chdir>
   <priority>normal</priority>
@@ -13,12 +13,12 @@
   <stayAlive>false</stayAlive>
   <restartOnCrash>false</restartOnCrash>
   <manifest></manifest>
-  <icon>E:\Workspace\KPaint\icon.ico</icon>
+  <icon>W:\KPaint\icon.ico</icon>
   <jre>
-    <path></path>
-    <bundledJre64Bit>false</bundledJre64Bit>
+    <path>.\jre</path>
+    <bundledJre64Bit>true</bundledJre64Bit>
     <bundledJreAsFallback>false</bundledJreAsFallback>
-    <minVersion>1.8.0_102</minVersion>
+    <minVersion></minVersion>
     <maxVersion></maxVersion>
     <jdkPreference>preferJre</jdkPreference>
     <runtimeBits>64/32</runtimeBits>
