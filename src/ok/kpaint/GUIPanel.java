@@ -12,6 +12,8 @@ import ok.kpaint.gui.layers.*;
 import ok.kui.*;
 
 public class GUIPanel extends JPanel {
+	
+	public static final boolean EXTRACT_MODE_ALLOWED = false;
 
 	private ControllerInterface controllerInterface;
 	private ImagePanelInterface imagePanelInterface;
@@ -52,7 +54,9 @@ public class GUIPanel extends JPanel {
 		}
 		@Override
 		public void changeModeHotkey(BrushMode mode) {
-			clickModeButton(mode);
+			if(EXTRACT_MODE_ALLOWED) {
+				clickModeButton(mode);
+			}
 		}
 		@Override
 		public void switchLayout(boolean withTitles) {
@@ -246,24 +250,24 @@ public class GUIPanel extends JPanel {
 //		c.gridx = 0; c.gridy = row++;
 //		this.add(newFile, c);
 		
-//		// ############ ROW 1 ################## 
-//		c.gridx = 0; c.gridy = row++; c.weighty = 1;
-//		this.add(getSeparator(sepHeight, sepColor), c);
-//		c.weighty = 0;
-//		c.gridx = 0; c.gridy = row; c.gridwidth = 1;
-//		this.add(undoButton, c);
-//		c.gridx = 1; c.gridy = row++;
-//		this.add(redoButton, c);
-//		c.gridwidth = 2;
+		// ############ ROW 1 ################## 
+		c.gridx = 0; c.gridy = row++; c.weighty = 1;
+		this.add(getSeparator(sepHeight, sepColor), c);
+		c.weighty = 0;
+		c.gridx = 0; c.gridy = row; c.gridwidth = 1;
+		this.add(undoButton, c);
+		c.gridx = 1; c.gridy = row++;
+		this.add(redoButton, c);
+		c.gridwidth = 2;
 		
 		// ############ ROW 2 ################## 
 		c.gridx = 0; c.gridy = row++; c.weighty = 1;
 		this.add(getSeparator(sepHeight, sepColor), c);
 		c.weighty = 0;
-		c.gridx = 0; c.gridy = row++;
-		this.add(modeButtons.get(BrushMode.EXTRACT), c);
-//		c.gridx = 0; c.gridy = row++;
-//		this.add(applyButton, c);
+		if(EXTRACT_MODE_ALLOWED) {
+			c.gridx = 0; c.gridy = row++;
+			this.add(modeButtons.get(BrushMode.EXTRACT), c);
+		}
 		c.gridwidth = 1;
 		c.gridx = 0; c.gridy = row;
 		this.add(toggleTiling, c);
@@ -294,14 +298,14 @@ public class GUIPanel extends JPanel {
 		c.gridx = 0; c.gridy = row++; c.weighty = 1;
 		this.add(getSeparator(sepHeight, sepColor), c);
 		c.weighty = 0;
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.COLOR_PICKER), c);
 		c.gridwidth = 1;
 		c.gridx = 0; c.gridy = row;
 		this.add(brushColor1, c);
 		c.gridx = 1; c.gridy = row++;
 		this.add(brushColor2, c);
 		c.gridwidth = 2;
-		c.gridx = 0; c.gridy = row++;
-		this.add(modeButtons.get(BrushMode.COLOR_PICKER), c);
 		c.gridx = 0; c.gridy = row++;
 		this.add(swatchesPanel, c);
 		

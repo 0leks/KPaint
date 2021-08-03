@@ -15,6 +15,9 @@ public class Vec2i {
 	public Vec2i(Point p) {
 		this(p.x, p.y);
 	}
+	public Vec2i(Vec2i v) {
+		this(v.x, v.y);
+	}
 
 	public Vec2i add(int xx, int yy) {
 		return new Vec2i(x + xx, y + yy);

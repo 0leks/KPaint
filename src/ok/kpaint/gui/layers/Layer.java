@@ -6,37 +6,34 @@ import java.util.*;
 
 import ok.kpaint.*;
 import ok.kpaint.gui.*;
+import ok.kpaint.history.*;
 
 public class Layer {
 	
-	private static final int DEFAULT_SIZE = 256;
+	public static final int DEFAULT_SIZE = 1024;
 	
 	private static int idCounter = 0;
 	private final int id;
 
 	private BufferedImage image;
 	private Vec2i position = new Vec2i();
+	private Vec2i previousPosition = null;
 	
 	private boolean shown;
 	
-	public Layer() {
-		this.id = idCounter++;
-		image = new BufferedImage(DEFAULT_SIZE, DEFAULT_SIZE, BufferedImage.TYPE_INT_ARGB);
-		shown = true;
-	}
+	
 	public Layer(BufferedImage image) {
 		this.id = idCounter++;
 		this.image = image;
 		shown = true;
 	}
 	public Layer(Layer layer) {
-		this.id = idCounter++;
-		this.image = layer.image;
+		this(layer.image);
 		this.shown = layer.shown;
 		this.position = layer.position;
 	}
 	
-	public void translate(Vec2i delta) {
+	private void translate(Vec2i delta) {
 		position.x += delta.x;
 		position.y += delta.y;
 	}
@@ -47,15 +44,19 @@ public class Layer {
 	}
 	
 	public void setPosition(Vec2i position) {
-		this.position = position;
+		this.position.x = position.x;
+		this.position.y = position.y;
 	}
 	
 	/**
 	 * 	this is called when state changes on a command
 	 */
 	public void updateCommand(Command inprogressCommand) {
-		Vec2i delta = inprogressCommand.mouseEndPixel.subtract(inprogressCommand.mouseStartPixel);
 		if(inprogressCommand.handle.type == HandleType.MOVE) {
+			if(previousPosition == null) {
+				previousPosition = new Vec2i(position);
+			}
+			Vec2i delta = inprogressCommand.mouseEndPixel.subtract(inprogressCommand.mouseStartPixel);
 			translate(delta);
 			inprogressCommand.mouseStartPixel = inprogressCommand.mouseEndPixel;
 		}
@@ -91,13 +92,25 @@ public class Layer {
 		}
 		return newSize;
 	}
-	/**
-	 * 	this is called when a command is completed (usually when mouse is released)
-	 */
-	public void applyCommand(Command command, Color altColor) {
-		Vec2i delta = command.mouseEndPixel.subtract(command.mouseStartPixel);
+	private Edit makeMoveEdit(Vec2i target) {
+		return new Edit(
+            () -> { 
+            	setPosition(target);
+            }, 
+            () -> {
+            	return makeMoveEdit(new Vec2i(position));
+            });
+	}
+	/** Called when a command is completed 
+	 * (usually when mouse is released) */
+	protected void applyCommand(Command command, Color altColor) {
 		if(command.handle.type == HandleType.MOVE) {
+			Vec2i delta = command.mouseEndPixel.subtract(command.mouseStartPixel);
 			translate(delta);
+			if(previousPosition != null) {
+				History.push(makeMoveEdit(previousPosition));
+				previousPosition = null;
+			}
 		}
 		else {
 			Rectangle newSize = getBoundsAfterCommand(command);
@@ -110,30 +123,69 @@ public class Layer {
 		}
 	}
 	
-	public void stretch(Rectangle newSize) {
-		BufferedImage newImage = new BufferedImage(newSize.width, newSize.height, BufferedImage.TYPE_4BYTE_ABGR);
-		Graphics2D g = newImage.createGraphics();
-		g.drawImage(image, 0, 0, newSize.width, newSize.height, null);
-		g.dispose();
-		this.image = newImage;
-		position.x = newSize.x;
-		position.y = newSize.y;
+	private Edit makeReplaceImageEdit(BufferedImage newimage, Vec2i newposition) {
+		return new Edit(
+	        () -> {
+	        	this.image = newimage;
+	        	this.position.x = newposition.x;
+	        	this.position.y = newposition.y;
+	    	}, 
+	        () -> {
+	        	BufferedImage im = this.image;
+	        	Vec2i pos = new Vec2i(this.position);
+	        	return makeReplaceImageEdit(im, pos);
+	        });
+	}
+	private void stretch(Rectangle newSize) {
+		BufferedImage oldImage = this.image;
+		Vec2i oldPosition = new Vec2i(this.position);
+		Edit e = new Edit(
+            () -> {
+        		BufferedImage newImage = new BufferedImage(newSize.width, newSize.height, BufferedImage.TYPE_4BYTE_ABGR);
+        		Graphics2D g = newImage.createGraphics();
+        		g.drawImage(image, 0, 0, newSize.width, newSize.height, null);
+        		g.dispose();
+        		this.image = newImage;
+        		position.x = newSize.x;
+        		position.y = newSize.y;
+        	}, 
+            () -> {
+            	return makeReplaceImageEdit(oldImage, oldPosition);
+            });
+		History.push(e.getInverse());
+		e.apply();
 	}
 	
-	public void resize(Rectangle newSize, Color altColor) {
+	public static BufferedImage resizeImageToFit(BufferedImage image, Rectangle currentSize, Rectangle newSize, Color altColor) {
 		BufferedImage newImage = new BufferedImage(newSize.width, newSize.height, BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics2D g = newImage.createGraphics();
 		g.setColor(altColor);
-		Vec2i deltaPos = position.subtract(new Vec2i(newSize.x, newSize.y));
+		Vec2i currentPos = new Vec2i(currentSize.x, currentSize.y);
+		Vec2i deltaPos = currentPos.subtract(new Vec2i(newSize.x, newSize.y));
 		g.fillRect(0, 0, deltaPos.x, newImage.getHeight());
 		g.fillRect(0, 0, newImage.getWidth(), deltaPos.y);
 		g.fillRect(deltaPos.x + image.getWidth(), 0, newImage.getWidth() - image.getWidth(), newImage.getHeight());
 		g.fillRect(0, deltaPos.y + image.getHeight(), newImage.getWidth(), newImage.getHeight());
 		g.drawImage(image, deltaPos.x, deltaPos.y, null);
 		g.dispose();
-		this.image = newImage;
-		position.x = newSize.x;
-		position.y = newSize.y;
+		return newImage;
+	}
+	
+	public void resize(Rectangle newSize, Color altColor) {
+		BufferedImage oldImage = this.image;
+		Vec2i oldPosition = new Vec2i(this.position);
+		Edit e = new Edit(
+            () -> {
+            	this.image = resizeImageToFit(image, bounds(), newSize, altColor);
+        		position.x = newSize.x;
+        		position.y = newSize.y;
+    		}, 
+            () -> {
+            	return makeReplaceImageEdit(oldImage, oldPosition);
+            });
+		History.push(e.getInverse());
+		e.apply();
+	
 	}
 	
 	public void reflectImage(boolean horizontal) {
@@ -162,6 +214,8 @@ public class Layer {
 		lowerBound.y = Math.max(lowerBound.y, 0);
 		upperBound.x = Math.min(upperBound.x, image.getWidth()-1);
 		upperBound.y = Math.min(upperBound.y, image.getHeight()-1);
+		
+		ImageEditRecorder.drawing(this, lowerBound, upperBound);
 		
 		int radius = brush.getSize()/2;
 		int maxdistance = radius*radius;
@@ -211,6 +265,7 @@ public class Layer {
 		
 		while (!search.isEmpty()) {
 			Vec2i pixel = search.removeFirst();
+			ImageEditRecorder.drawing(this, new Point(pixel.x, pixel.y));
 			image.setRGB(pixel.x, pixel.y, brush.getColor().getRGB());
 			
 			Vec2i[] neighbors = new Vec2i[] {
@@ -250,6 +305,7 @@ public class Layer {
 		for (int i = 0; i < image.getWidth(); i++) {
 			for (int j = 0; j < image.getHeight(); j++) {
 				if(colors.contains(image.getRGB(i, j))) {
+					ImageEditRecorder.drawing(this, new Point(i, j));
 					image.setRGB(i, j, brush.getColor().getRGB());
 				}
 			}

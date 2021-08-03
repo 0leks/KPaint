@@ -1,8 +1,9 @@
 
 REQUIRED:
-	- undo/redo on drawing as well as move/resize/stretch actions
+	- rename layers
 
 OPTIONAL:
+	- undo/redo extract action and reenable extract
 	- add settings menu
 		- tiling
 		- background

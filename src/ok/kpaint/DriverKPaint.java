@@ -7,7 +7,6 @@ import java.io.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
-import ok.kpaint.gui.*;
 import ok.kpaint.gui.layers.*;
 
 public class DriverKPaint {
@@ -17,7 +16,7 @@ public class DriverKPaint {
 	public static final Font MAIN_FONT_BIG = new Font("Cooper Black", Font.PLAIN, 16);
 	public static final boolean DEBUG = false;
 	
-	public static final String TITLE = "KPaint 1.2 alpha";
+	public static final String TITLE = "KPaint 1.2 beta";
 	
 	private JFrame frame;
 	private ImagePanel imagePanel;
@@ -109,13 +108,15 @@ public class DriverKPaint {
 		return filename.substring(lastDot + 1);
 	}
 
-	private void openImage(String path) {
+	private boolean openImage(String path) {
 		BufferedImage image = loadImage(path);
 		if (image != null) {
 			imagePanel.addImageLayer(image);
 			imagePanelInterface.resetView();
 			updateTitle(path);
+			return true;
 		}
+		return false;
 	}
 	
 	private void saveImage() {
@@ -157,17 +158,18 @@ public class DriverKPaint {
 		}
 		return null;
 	}
-
+	
+	private void startWithPath(String filename) {
+		if(filename != null && !openImage(filename)) {
+			BufferedImage image = new BufferedImage(Layer.DEFAULT_SIZE, Layer.DEFAULT_SIZE, BufferedImage.TYPE_INT_ARGB);
+			imagePanel.addImageLayer(image);
+			imagePanelInterface.resetView();
+		}
+	}
+	
 	public static void main(String[] args) {
 		DriverKPaint p = new DriverKPaint();
-		if (args.length > 0) {
-			p.openImage(args[0]);
-			p.imagePanelInterface.resetView();
-		}
-		else {
-			p.layers.add();
-			p.imagePanelInterface.resetView();
-		}
+		p.startWithPath(args.length > 0 ? args[0] : null);
 	}
 
 }

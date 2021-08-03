@@ -2,6 +2,7 @@ package ok.kui;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.*;
 import java.util.*;
 
 import javax.swing.*;
@@ -9,7 +10,7 @@ import javax.swing.*;
 import ok.kpaint.*;
 
 public class ColorSwatches extends JPanel {
-	
+	private Image background = Utils.resizeImageIcon(Utils.loadImageIconResource("/transparentBackground.png"), 32, 32).getImage();
 	class ColorButton extends JButton {
 		public ColorButton() {
 			this.addActionListener(e -> {
@@ -29,6 +30,7 @@ public class ColorSwatches extends JPanel {
 		@Override
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
+			g.drawImage(background, 0, 0, null);
 			g.setColor(c);
 			g.fillRect(0, 0, getWidth()-1, getHeight()-1);
 			g.setColor(Color.black);
@@ -50,15 +52,31 @@ public class ColorSwatches extends JPanel {
 		c.gridwidth = 1;
 		c.weightx = 1;
 		c.weighty = 1;
+		Color[] defaultColors = new Color[] {
+				Color.red,
+				Color.green,
+				Color.blue,
+				Color.cyan,
+				Color.magenta,
+				Color.yellow,
+				Color.black,
+				Color.gray,
+				Color.white,
+				new Color(0, 0, 0, 0)
+		};
 		for(int row = 0; row < 2; row++) {
 			c.gridy = row;
 			for(int col = 0; col < 5; col++) {
 				ColorButton b = new ColorButton();
+//				b.setColor(defaultColors[row*5 + col]);
 				b.setFocusable(false);
 				colorButtons.add(b);
 				c.gridx = col;
 				this.add(b, c);
 			}
+		}
+		for(Color color : defaultColors) {
+			choseColor(color);
 		}
 	}
 	

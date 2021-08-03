@@ -10,6 +10,7 @@ import javax.swing.*;
 import ok.kpaint.Utils.*;
 import ok.kpaint.gui.*;
 import ok.kpaint.gui.layers.*;
+import ok.kpaint.history.*;
 
 public class ImagePanel extends JPanel implements LayersListener, ComponentListener {
 	
@@ -27,6 +28,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 	
 	private Command inprogressCommand;
 	private boolean movingCamera;
+	private boolean currentlyDrawing;
 	private HashSet<Integer> mouseButtonsPressed = new HashSet<>();
 	private boolean mouseOverHandle = false;
 
@@ -44,11 +46,13 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 		@Override
 		public void undo() {
 //			history.rewindVersion();
+			History.undo();
 			repaint();
 		}
 		@Override
 		public void redo() {
 //			history.upwindVersion();
+			History.redo();
 			repaint();
 		}
 		@Override
@@ -221,7 +225,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 						inprogressCommand = new Command(layers.active(), handle, screenToPixel(mousePos));
 					}
 					else {
-						draw(screenToPixel(e.getPoint()), e.isShiftDown());
+						draw(screenToPixel(e.getPoint()));
 					}
 				}
 				previousMousePosition = mousePos;
@@ -246,7 +250,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 				}
 				else {
 					if(inprogressCommand != null) {
-						inprogressCommand.layer.applyCommand(inprogressCommand, altColor);
+						layers.applyCommand(inprogressCommand, altColor);
 						// TODO add to history here
 						inprogressCommand = null;
 					}
@@ -255,6 +259,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 						guiInterface.finishedSelection();
 					}
 					else {
+						finishDraw();
 					}
 				}
 				previousMousePosition = mousePos;
@@ -291,7 +296,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 						updateExtraction(mousePos);
 					}
 					else {
-						draw(screenToPixel(mousePos), e.isShiftDown());
+						draw(screenToPixel(mousePos));
 					}
 				}
 				previousMousePosition = mousePos;
@@ -394,12 +399,17 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 		}
 		repaint();
 	}
-	public void draw(Vec2i currentPixel, boolean shiftDown) {
+	public void finishDraw() {
+		currentlyDrawing = false;
+		ImageEditRecorder.finishedDrawing();
+	}
+	public void draw(Vec2i currentPixel) {
+		currentlyDrawing = true;
 		Vec2i previousPixel = screenToPixel(previousMousePosition);
 		int deltax = currentPixel.x - previousPixel.x;
 		int deltay = currentPixel.y - previousPixel.y;
 		if(Math.abs(deltax) <= 1 && Math.abs(deltay) <= 1) {
-			drawOnPixel(currentPixel, shiftDown);
+			drawOnPixel(currentPixel);
 			return;
 		}
 		if(Math.abs(deltax) > Math.abs(deltay)) {
@@ -411,7 +421,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			for(int x = previousPixel.x; x <= currentPixel.x; x++) {
 				double ratio = (double)(x - previousPixel.x) / (currentPixel.x - previousPixel.x);
 				int yy = (int) (previousPixel.y + (currentPixel.y - previousPixel.y) * ratio);
-				drawOnPixel(new Vec2i(x, yy), shiftDown);
+				drawOnPixel(new Vec2i(x, yy));
 			}
 		}
 		else {
@@ -423,11 +433,11 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			for(int y = previousPixel.y; y <= currentPixel.y; y++) {
 				double ratio = (double)(y - previousPixel.y) / (currentPixel.y - previousPixel.y);
 				int xx = (int)(previousPixel.x + (currentPixel.x - previousPixel.x) * ratio);
-				drawOnPixel(new Vec2i(xx, y), shiftDown);
+				drawOnPixel(new Vec2i(xx, y));
 			}
 		}
 	}
-	public void drawOnPixel(Vec2i pixel, boolean shiftDown) {
+	public void drawOnPixel(Vec2i pixel) {
 		layers.draw(pixel, brush);
 		repaint();
 	}
