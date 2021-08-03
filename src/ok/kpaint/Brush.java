@@ -3,11 +3,21 @@ package ok.kpaint;
 public class Brush {
 	
 	private int brushSize;
+	private BrushShape shape;
 	private BrushMode brushMode;
 	
-	public Brush(int brushSize, BrushMode mode) {
+	public Brush(int brushSize, BrushShape shape, BrushMode mode) {
 		this.brushSize = brushSize;
+		this.shape = shape;
 		this.brushMode = mode;
+	}
+
+	public BrushShape getShape() {
+		return shape;
+	}
+
+	public void setShape(BrushShape shape) {
+		this.shape = shape;
 	}
 
 	public int getBrushSize() {

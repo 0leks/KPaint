@@ -26,6 +26,7 @@ public class GUIPanel extends JPanel {
 	private JButton brushColor1;
 	private JButton brushColor2;
 	private ColorSwatches swatchesPanel;
+	private JComboBox<BrushShape> brushShape;
 	private JPanel fillerPanel;
 	
 	private GUIInterface guiInterface = new GUIInterface() {
@@ -174,6 +175,13 @@ public class GUIPanel extends JPanel {
 		});
 		
 		swatchesPanel = new ColorSwatches(imagePanelInterface);
+		swatchesPanel.setFocusable(false);
+		
+		brushShape = new JComboBox<>(BrushShape.values());
+		KUI.setupJComponent(brushShape, "Changes brush shape between square and circle", Utils.resizeImageIcon(Utils.loadImageIconResource("resources/brush_shape.png"), 32, 32));
+		brushShape.addActionListener(e -> {
+			imagePanelInterface.setBrushShape((BrushShape)brushShape.getSelectedItem());
+		});
 
 		fillerPanel = new JPanel();
 		fillerPanel.setOpaque(false);
@@ -254,6 +262,10 @@ public class GUIPanel extends JPanel {
 		// ############ ROW 4 ################## 
 		c.gridx = 0; c.gridy = row++;
 		this.add(brushSize2, c);
+		
+		// ############ ROW 4.5 ################## 
+		c.gridx = 0; c.gridy = row++;
+		this.add(brushShape, c);
 
 		// ############ ROW 5 ################## 
 		c.gridx = 0; c.gridy = row++; c.weighty = 1;

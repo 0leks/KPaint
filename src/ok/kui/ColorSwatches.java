@@ -54,6 +54,7 @@ public class ColorSwatches extends JPanel {
 			c.gridy = row;
 			for(int col = 0; col < 5; col++) {
 				ColorButton b = new ColorButton();
+				b.setFocusable(false);
 				colorButtons.add(b);
 				c.gridx = col;
 				this.add(b, c);

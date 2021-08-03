@@ -9,7 +9,7 @@ import ok.kpaint.*;
 
 public class KUI {
 	
-	private static void setupJComponent(JComponent component, String tooltip, ImageIcon icon) {
+	public static void setupJComponent(JComponent component, String tooltip, ImageIcon icon) {
 		component.setToolTipText(tooltip);
 		component.setFocusable(false);
 		component.setBackground(Color.black);
@@ -30,6 +30,7 @@ public class KUI {
 		setupJComponent(button, tooltip, icon);
 		return button;
 	}
+	
 
 	public static KToggleButton setupKToggleButton(String title, String tooltip, String iconPath) {
 		KToggleButton button = new KToggleButton(title);

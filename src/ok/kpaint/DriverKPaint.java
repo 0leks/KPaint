@@ -1,17 +1,11 @@
 package ok.kpaint;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-
-import ok.*;
-import ok.kpaint.ImagePanel.*;
-import ok.kui.*;
 
 public class DriverKPaint {
 	public static final Font MAIN_FONT = new Font("Comic Sans MS", Font.PLAIN, 15);

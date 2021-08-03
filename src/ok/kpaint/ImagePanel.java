@@ -3,11 +3,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.*;
 
 import javax.swing.*;
@@ -52,7 +47,7 @@ public class ImagePanel extends JPanel {
 
 	/** AKA zoom level */
 	private double pixelSize = 1;
-	private Brush brush = new Brush(1, BrushMode.MOVE);
+	private Brush brush = new Brush(1, BrushShape.SQUARE, BrushMode.MOVE);
 	public void setBrushMode(BrushMode mode) {
 		brush.setMode(mode);
 	}
@@ -144,6 +139,10 @@ public class ImagePanel extends JPanel {
 		public void setBrushSize(int size) {
 			brush.setBrushSize(size);
 			repaint();
+		}
+		@Override
+		public void setBrushShape(BrushShape shape) {
+			brush.setShape(shape);
 		}
 		@Override
 		public void setBrushMode(BrushMode mode) {
@@ -607,7 +606,7 @@ public class ImagePanel extends JPanel {
 			fill(lowerBound, upperBound, setTo);
 		}
 		else if (brush.getMode() == BrushMode.BRUSH) {
-			brush(lowerBound, upperBound, setTo);
+			brush(lowerBound, upperBound, brush.getShape(), setTo);
 		}
 		repaint();
 	}
@@ -629,7 +628,7 @@ public class ImagePanel extends JPanel {
 		history.modified();
 		BufferedImage subimage = history.getCurrent().getSubimage(selectedRectangle.x, selectedRectangle.y, selectedRectangle.width + 1, selectedRectangle.height + 1);
 		selectedImage = Utils.copyImage(subimage);
-		brush(new Point(selectedRectangle.x, selectedRectangle.y), new Point(selectedRectangle.x+selectedRectangle.width, selectedRectangle.y + selectedRectangle.height), color2);
+		brush(new Point(selectedRectangle.x, selectedRectangle.y), new Point(selectedRectangle.x+selectedRectangle.width, selectedRectangle.y + selectedRectangle.height), BrushShape.SQUARE, color2);
 		history.pushVersion();
 		repaint();
 	}
@@ -765,10 +764,20 @@ public class ImagePanel extends JPanel {
 		return neighbors;
 	}
 	
-	private void brush(Point lowerBound, Point upperBound, Color setTo) {
-		
+	private void brush(Point lowerBound, Point upperBound, BrushShape shape, Color setTo) {
+		int centerx = (upperBound.x + lowerBound.x)/2;
+		int centery = (upperBound.y + lowerBound.y)/2;
+		int radius = (upperBound.x - lowerBound.x)/2;
+		int maxdistance = radius*radius;
 		for(int i = lowerBound.x; i <= upperBound.x; i++) {
 			for(int j = lowerBound.y; j <= upperBound.y; j++) {
+				if(shape == BrushShape.CIRCLE) {
+					double distance = (i - centerx)*(i - centerx) 
+							+ (j - centery)*(j - centery);
+					if(distance > maxdistance) {
+						continue;
+					}
+				}
 				history.getCurrent().setRGB(i, j, setTo.getRGB());
 			}
 		}
