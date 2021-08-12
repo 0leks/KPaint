@@ -1,7 +1,5 @@
 package ok.kpaint.history;
 
-import ok.kpaint.gui.layers.*;
-
 public class Edit implements ApplyEdit, GetInverse {
 	private ApplyEdit apply;
 	private GetInverse getInverse;

@@ -9,8 +9,12 @@ import ok.kpaint.gui.*;
 import ok.kpaint.history.*;
 
 public class Layers {
+	private static int latestWidth = Layer.DEFAULT_SIZE;
+	private static int latestHeight = Layer.DEFAULT_SIZE;
 	private static final Layer DUMMY = new Layer(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB)) {
 		public boolean shown() {return false;};
+		public int w() {return latestWidth;};
+		public int h() {return latestHeight;};
 	};
 	
 	private LinkedList<LayersListener> listeners = new LinkedList<>();
@@ -86,17 +90,17 @@ public class Layers {
 	}
 	
 	public void draw(Vec2i pixel, Brush brush) {
-		if(active == DUMMY) {
+		if(active() == DUMMY) {
 			return;
 		}
-		active.draw(pixel, brush);
+		active().draw(pixel, brush);
 	}
 	
 	public void add(BufferedImage image) {
 		Layer newLayer = new Layer(image);
 		centerLayer(newLayer);
-		if(active != DUMMY) {
-			add(newLayer, layers.indexOf(active) + 1);
+		if(active() != DUMMY) {
+			add(newLayer, layers.indexOf(active()) + 1);
 		}
 		else {
 			add(newLayer, layers.size());
@@ -171,6 +175,8 @@ public class Layers {
 	
 	public void setActive(Layer layer) {
 		active = layer;
+		latestWidth = active.w();
+		latestHeight = active.h();
 		notifyListeners();
 	}
 	
@@ -212,15 +218,15 @@ public class Layers {
 					return;
 				}
 				layers.remove(layer);
-				if(layer == active) {
+				if(layer == active()) {
 					if(!layers.isEmpty()) {
 						if(index >= layers.size()) {
 							index--;
 						}
-						active = layers.get(index);
+						setActive(layers.get(index));
 					}
 					else {
-						active = DUMMY;
+						setActive(DUMMY);
 					}
 				}
 				notifyListeners();
