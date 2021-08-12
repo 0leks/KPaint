@@ -1,6 +1,9 @@
 
 REQUIRED:
 	- rename layers
+	- update README if needed
+	- multithread drawing to guarantee smooth curves even with fast mouse movements
+	- make installer and add updater
 	
 HIGH PRIORITY:
 	- hold ctrl to force axis-aligned move or to maintain aspect ratio
