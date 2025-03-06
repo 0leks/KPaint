@@ -19,9 +19,6 @@
 - F switches to fill
 - A switches to matching color mode
 
-## Removed Features
-- extract mode
-
 ## New Features
 - Added Layers feature
 	- when you open a new image, paste an image, or make a new canvas, KPaint will create a new layer for it.
@@ -43,7 +40,8 @@
 	- Extract mode will extract a section of all currently visible layers into a new layer
 
 - Added toggleable dark mode
+- Added toggleable Right Mouse Button drawing mode
 
 ## Changed Features
-- There is now only a main brush color that can be used with left mouse. Pressing shift swaps the main color with the alternate color.
+- There is now only a main brush color that can be used with left mouse. Pressing shift swaps the main color with the alternate color. Enabling the "Right Mouse Button drawing mode" gets around this
 - CTRL+C now copies composed image of all the layers. To copy a single layer, use the right click menu or hide all other layers.
