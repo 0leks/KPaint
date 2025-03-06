@@ -8,8 +8,10 @@ import ok.kpaint.*;
 public class Handle {
 	private static final Toolkit toolkit = Toolkit.getDefaultToolkit();
 
-	public static final Handle MOVE_NORTH = new Handle(HandleType.MOVE, Direction.ALL);	
-	public static final Handle MOVE_SOUTH = new Handle(HandleType.MOVE, Direction.SOUTH);	
+	public static final Handle MOVE_NORTHEAST = new Handle(HandleType.MOVE, Direction.ALL);
+	public static final Handle MOVE_SOUTHEAST = new Handle(HandleType.MOVE, Direction.ALL);
+	public static final Handle MOVE_NORTHWEST = new Handle(HandleType.MOVE, Direction.ALL);
+	public static final Handle MOVE_SOUTHWEST = new Handle(HandleType.MOVE, Direction.ALL);
 	
 	public static final Handle RESIZE_NORTH = new Handle(HandleType.RESIZE, Direction.NORTH);
 	public static final Handle RESIZE_SOUTH = new Handle(HandleType.RESIZE, Direction.SOUTH);
@@ -84,16 +86,17 @@ public class Handle {
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Handle other = (Handle) obj;
-		if (direction != other.direction)
-			return false;
-		if (type != other.type)
-			return false;
-		return true;
+		return false;
+//		if (obj == null)
+//			return false;
+//		if (getClass() != obj.getClass())
+//			return false;
+//		Handle other = (Handle) obj;
+//		if (direction != other.direction)
+//			return false;
+//		if (type != other.type)
+//			return false;
+//		return true;
 	}
 	
 	

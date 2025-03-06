@@ -141,6 +141,8 @@ public class KSlider extends JPanel {
 		if(ratio >= 0.8 || ratio <= 0.2) {
 			newMax = 2*value - min + 1;
 		}
+		int minimumScaleRange = 20;
+		newMax = newMax < minimumScaleRange ? minimumScaleRange : newMax;
 		if(newMax > min && newMax != currentMax) {
 			currentMax = newMax;
 			repaint();

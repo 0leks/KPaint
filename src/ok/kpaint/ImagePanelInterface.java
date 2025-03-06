@@ -14,6 +14,7 @@ public interface ImagePanelInterface {
 
 	public void showTiling(boolean enabled);
 	public void enableDarkMode(boolean enabled);
+	public void enableRightMouseDraw(boolean enabled);
 
 	public Color getMainColor();
 	public Color getAltColor();

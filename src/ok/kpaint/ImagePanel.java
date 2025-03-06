@@ -33,12 +33,13 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 	private boolean mouseOverHandle = false;
 
 	private Brush brush = new Brush(Brush.DEFAULT_BRUSH);
-	private Color altColor = new Color(0, 0, 0, 0);
+	private Brush altColorBrush = new Brush(Brush.DEFAULT_ALT_BRUSH);
 	private Layers layers;
 	private BufferedImage background;
 	
 	private boolean showTiling;
 	private boolean darkMode;
+	private boolean rightMouseDrawing;
 	
 	private GUIInterface guiInterface;
 	private ControllerInterface controllerInterface;
@@ -69,7 +70,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 		}
 		@Override
 		public Color getAltColor() {
-			return altColor;
+			return altColorBrush.getColor();
 		}
 		@Override
 		public void setMainColor(Color mainColor) {
@@ -78,15 +79,18 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 		}
 		@Override
 		public void setAltColor(Color altColor) {
-			ImagePanel.this.altColor = altColor;
+			altColorBrush.setColor(altColor);
 			guiInterface.changedColor(altColor);
 		}
 		@Override
 		public void swapColors() {
-			Color temp = brush.getColor();
-			brush.setColor(altColor);
-			altColor = temp;
-			guiInterface.changedColor(altColor);
+			Brush temp = brush;
+			brush = altColorBrush;
+			altColorBrush = temp;
+//			Color temp = brush.getColor();
+//			brush.setColor(altColor);
+//			altColor = temp;
+			guiInterface.changedColor(brush.getColor());
 		}
 		@Override
 		public void newLayer() {
@@ -107,17 +111,24 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			updateBackground();
 		}
 		@Override
+		public void enableRightMouseDraw(boolean enabled) {
+			rightMouseDrawing = enabled;
+		}
+		@Override
 		public void setBrushSize(int size) {
 			brush.setSize(size);
+			altColorBrush.setSize(size);
 			repaint();
 		}
 		@Override
 		public void setBrushShape(BrushShape shape) {
 			brush.setShape(shape);
+			altColorBrush.setShape(shape);
 		}
 		@Override
 		public void setBrushMode(BrushMode mode) {
 			brush.setMode(mode);
+			altColorBrush.setMode(mode);
 		}
 	};
 	
@@ -210,6 +221,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			public void mousePressed(MouseEvent e) {
 				Vec2i mousePos = new Vec2i(e.getPoint());
 				mouseButtonsPressed.add(e.getButton());
+				// only allow right mouse drawing on mouse drag, otherwise it is indistinguishable from attempted right click
 				if(e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
 					
 				}
@@ -225,7 +237,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 						inprogressCommand = new Command(layers.active(), handle, screenToPixel(mousePos));
 					}
 					else {
-						draw(screenToPixel(e.getPoint()));
+						draw(screenToPixel(e.getPoint()), false);
 					}
 				}
 				previousMousePosition = mousePos;
@@ -237,20 +249,23 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 				Vec2i mousePos = new Vec2i(e.getPoint());
 				mouseButtonsPressed.remove(e.getButton());
 				if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
-					if(movingCamera) {
-						finishMovingCanvas();
-					}
-					else {
-						Layer layer = layers.hitScan(screenToPixel(mousePos));
-						if(layer != null) {
-							LayerContextMenu contextMenu = new LayerContextMenu(layers, layer);
-							contextMenu.show(ImagePanel.this, e.getX(), e.getY());
+					if (!currentlyDrawing) {
+						if(movingCamera) {
+							finishMovingCanvas();
+						}
+						else {
+							Layer layer = layers.hitScan(screenToPixel(mousePos));
+							if(layer != null) {
+								LayerContextMenu contextMenu = new LayerContextMenu(layers, layer);
+								contextMenu.show(ImagePanel.this, e.getX(), e.getY());
+							}
 						}
 					}
 				}
-				else {
+				if (e.getButton() == MouseEvent.BUTTON1 
+						|| (rightMouseDrawing && e.getButton() == MouseEvent.BUTTON3)) {
 					if(inprogressCommand != null) {
-						layers.applyCommand(inprogressCommand, altColor);
+						layers.applyCommand(inprogressCommand, altColorBrush.getColor());
 						// TODO add to history here
 						inprogressCommand = null;
 					}
@@ -280,8 +295,8 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			@Override
 			public void mouseDragged(MouseEvent e) {
 				Vec2i mousePos = new Vec2i(e.getPoint());
-				if(mouseButtonsPressed.contains(MouseEvent.BUTTON2)
-						|| mouseButtonsPressed.contains(MouseEvent.BUTTON3)) {
+				if (mouseButtonsPressed.contains(MouseEvent.BUTTON2)
+						|| (!rightMouseDrawing && mouseButtonsPressed.contains(MouseEvent.BUTTON3))) {
 					startMovingCanvas(previousMousePosition);
 				}
 				if (movingCamera) {
@@ -296,7 +311,8 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 						updateExtraction(mousePos);
 					}
 					else {
-						draw(screenToPixel(mousePos));
+						boolean useAltColor = mouseButtonsPressed.contains(MouseEvent.BUTTON3);
+						draw(screenToPixel(mousePos), useAltColor);
 					}
 				}
 				previousMousePosition = mousePos;
@@ -306,11 +322,6 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			@Override
 			public void mouseMoved(MouseEvent e) {
 				Vec2i mousePos = new Vec2i(e.getPoint());
-//				int newCursorType = Cursor.DEFAULT_CURSOR;
-//				if(brush.getMode() == BrushMode.SELECT) {
-//					newCursorType = Cursor.CROSSHAIR_CURSOR;
-//				}
-//				ImagePanel.this.setCursor(Cursor.getPredefinedCursor(newCursorType));
 				updateCursor(mousePos);
 				previousMousePosition = mousePos;
 				repaint();
@@ -375,7 +386,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 	}
 	private void finishExtraction() {
 		Rectangle extraction = Utils.makeRectangle(extractionStart, extractionCurrent);
-		layers.extract(extraction, altColor);
+		layers.extract(extraction, altColorBrush.getColor());
 		guiInterface.changeModeHotkey(BrushMode.BRUSH);
 		extractionStart = null;
 		extractionCurrent = null;
@@ -403,13 +414,13 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 		currentlyDrawing = false;
 		ImageEditRecorder.finishedDrawing();
 	}
-	public void draw(Vec2i currentPixel) {
+	public void draw(Vec2i currentPixel, boolean useAltColor) {
 		currentlyDrawing = true;
 		Vec2i previousPixel = screenToPixel(previousMousePosition);
 		int deltax = currentPixel.x - previousPixel.x;
 		int deltay = currentPixel.y - previousPixel.y;
 		if(Math.abs(deltax) <= 1 && Math.abs(deltay) <= 1) {
-			drawOnPixel(currentPixel);
+			drawOnPixel(currentPixel, useAltColor);
 			return;
 		}
 		if(Math.abs(deltax) > Math.abs(deltay)) {
@@ -421,7 +432,7 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			for(int x = previousPixel.x; x <= currentPixel.x; x++) {
 				double ratio = (double)(x - previousPixel.x) / (currentPixel.x - previousPixel.x);
 				int yy = (int) (previousPixel.y + (currentPixel.y - previousPixel.y) * ratio);
-				drawOnPixel(new Vec2i(x, yy));
+				drawOnPixel(new Vec2i(x, yy), useAltColor);
 			}
 		}
 		else {
@@ -433,12 +444,13 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			for(int y = previousPixel.y; y <= currentPixel.y; y++) {
 				double ratio = (double)(y - previousPixel.y) / (currentPixel.y - previousPixel.y);
 				int xx = (int)(previousPixel.x + (currentPixel.x - previousPixel.x) * ratio);
-				drawOnPixel(new Vec2i(xx, y));
+				drawOnPixel(new Vec2i(xx, y), useAltColor);
 			}
 		}
 	}
-	public void drawOnPixel(Vec2i pixel) {
-		layers.draw(pixel, brush);
+	public void drawOnPixel(Vec2i pixel, boolean useAltColor) {
+		
+		layers.draw(pixel, useAltColor ? altColorBrush : brush);
 		repaint();
 	}
 	
@@ -529,45 +541,103 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 		return brush.getColor();
 	}
 	public Color getAltColor() {
-		return altColor;
+		return altColorBrush.getColor();
 	}
 	
-	private HashMap<Handle, Vec2i> handles = new HashMap<>();
-	int radius = 16;
+	private HashMap<Handle, Vec4i> handles = new HashMap<>();
+	int controlHandleButtonSize = 32;
 	private void updateHandlePositions() {
 		Vec2i activeScreenTopLeft = pixelToScreen(new Vec2i(layers.active().x(), layers.active().y()));
 		Vec2i activeScreenBotRight = pixelToScreen(new Vec2i(layers.active().x() + layers.active().w(),
 		                                                     layers.active().y() + layers.active().h()));
+		activeScreenTopLeft.x -= 1;
+		activeScreenTopLeft.y -= 1;
+		activeScreenBotRight.x += 1;
+		activeScreenBotRight.y += 1;
+		
 		Vec2i boundedTopLeft = new Vec2i(Math.max(activeScreenTopLeft.x, 0), Math.max(activeScreenTopLeft.y, 0));
 		Vec2i boundedBotRight = new Vec2i(Math.min(activeScreenBotRight.x, getWidth()), Math.min(activeScreenBotRight.y, getHeight()));
 		Vec2i boundedCenter = new Vec2i((boundedTopLeft.x + boundedBotRight.x)/2, (boundedTopLeft.y + boundedBotRight.y)/2);
-
-		int radius = 16;
-		int padding = 2;
-		int distance = 10;
-		int offset = padding + radius;
-		handles.put(Handle.MOVE_NORTH, new Vec2i((boundedCenter.x + activeScreenTopLeft.x)/2, activeScreenTopLeft.y - distance - radius));
-		handles.put(Handle.MOVE_SOUTH, new Vec2i(activeScreenBotRight.x + distance + radius, (boundedCenter.y + activeScreenBotRight.y)/2));
 		
-		handles.put(Handle.RESIZE_NORTH, new Vec2i(boundedCenter.x - offset, activeScreenTopLeft.y - distance - radius));
-		handles.put(Handle.RESIZE_SOUTH, new Vec2i(boundedCenter.x - offset, activeScreenBotRight.y + distance + radius));
-		handles.put(Handle.RESIZE_EAST, new Vec2i(activeScreenBotRight.x + distance + radius, boundedCenter.y - offset));
-		handles.put(Handle.RESIZE_WEST, new Vec2i(activeScreenTopLeft.x - distance - radius, boundedCenter.y - offset));
+		int widthOfTopEdgeButtons = controlHandleButtonSize * 2;
+		if (boundedCenter.x < activeScreenTopLeft.x + widthOfTopEdgeButtons/2 + 1) {
+			boundedCenter.x = activeScreenTopLeft.x + widthOfTopEdgeButtons/2 + 1;
+		}
+		if (boundedCenter.x + widthOfTopEdgeButtons/2 > activeScreenBotRight.x - 1) {
+			boundedCenter.x = activeScreenBotRight.x - 1 - widthOfTopEdgeButtons/2;
+		}
 
-		handles.put(Handle.RESIZE_NORTHEAST, new Vec2i(activeScreenBotRight.x, activeScreenTopLeft.y - distance - radius));
-		handles.put(Handle.RESIZE_SOUTHEAST, new Vec2i(activeScreenBotRight.x, activeScreenBotRight.y + distance + radius));
-		handles.put(Handle.RESIZE_SOUTHWEST, new Vec2i(activeScreenTopLeft.x, activeScreenBotRight.y + distance + radius));
-		handles.put(Handle.RESIZE_NORTHWEST, new Vec2i(activeScreenTopLeft.x, activeScreenTopLeft.y - distance - radius));
+		int heightOfLeftEdgeButtons = controlHandleButtonSize * 2;
+		if (boundedCenter.y < activeScreenTopLeft.y + heightOfLeftEdgeButtons/2 + 1) {
+			boundedCenter.y = activeScreenTopLeft.y + heightOfLeftEdgeButtons/2 + 1;
+		}
+		if (boundedCenter.y + heightOfLeftEdgeButtons/2 > activeScreenBotRight.y - 1) {
+			boundedCenter.y = activeScreenBotRight.y - 1 - heightOfLeftEdgeButtons/2;
+		}
 		
-		handles.put(Handle.STRETCH_NORTH, new Vec2i(boundedCenter.x + offset, activeScreenTopLeft.y - distance - radius));
-		handles.put(Handle.STRETCH_SOUTH, new Vec2i(boundedCenter.x + offset, activeScreenBotRight.y + distance + radius));
-		handles.put(Handle.STRETCH_EAST, new Vec2i(activeScreenBotRight.x + distance + radius, boundedCenter.y + offset));
-		handles.put(Handle.STRETCH_WEST, new Vec2i(activeScreenTopLeft.x - distance - radius, boundedCenter.y + offset));
 
-		handles.put(Handle.STRETCH_NORTHEAST, new Vec2i(activeScreenBotRight.x + distance + radius, activeScreenTopLeft.y));
-		handles.put(Handle.STRETCH_SOUTHEAST, new Vec2i(activeScreenBotRight.x + distance + radius, activeScreenBotRight.y));
-		handles.put(Handle.STRETCH_SOUTHWEST, new Vec2i(activeScreenTopLeft.x - distance - radius, activeScreenBotRight.y));
-		handles.put(Handle.STRETCH_NORTHWEST, new Vec2i(activeScreenTopLeft.x - distance - radius, activeScreenTopLeft.y));
+		int size = controlHandleButtonSize;
+		handles.put(Handle.MOVE_NORTHEAST, 
+				new Vec4i(activeScreenBotRight.x,
+						activeScreenTopLeft.y - size,
+						size, size));
+		handles.put(Handle.MOVE_SOUTHEAST, 
+				new Vec4i(activeScreenBotRight.x,
+						activeScreenBotRight.y,
+						size, size));
+		handles.put(Handle.MOVE_SOUTHWEST, 
+				new Vec4i(activeScreenTopLeft.x - size,
+						activeScreenBotRight.y,
+						size, size));
+		handles.put(Handle.MOVE_NORTHWEST, 
+				new Vec4i(activeScreenTopLeft.x - size,
+						activeScreenTopLeft.y - size,
+						size, size));
+		
+		handles.put(Handle.RESIZE_NORTHEAST,
+				new Vec4i(activeScreenBotRight.x + size,
+						activeScreenTopLeft.y - size,
+						size, size));
+		handles.put(Handle.RESIZE_SOUTHEAST,
+				new Vec4i(activeScreenBotRight.x + size,
+						activeScreenBotRight.y,
+						size, size));
+		handles.put(Handle.RESIZE_SOUTHWEST,
+				new Vec4i(activeScreenTopLeft.x - 2*size,
+						activeScreenBotRight.y,
+						size, size));
+		handles.put(Handle.RESIZE_NORTHWEST,
+				new Vec4i(activeScreenTopLeft.x - 2*size,
+						activeScreenTopLeft.y - size,
+						size, size));
+
+		handles.put(Handle.STRETCH_NORTHEAST,
+				new Vec4i(activeScreenBotRight.x,
+						activeScreenTopLeft.y - 2*size,
+						size, size));
+		handles.put(Handle.STRETCH_SOUTHEAST,
+				new Vec4i(activeScreenBotRight.x,
+						activeScreenBotRight.y + size,
+						size, size));
+		handles.put(Handle.STRETCH_SOUTHWEST,
+				new Vec4i(activeScreenTopLeft.x - size,
+						activeScreenBotRight.y + size,
+						size, size));
+		handles.put(Handle.STRETCH_NORTHWEST,
+				new Vec4i(activeScreenTopLeft.x - size,
+						activeScreenTopLeft.y - 2*size,
+						size, size));
+		
+		handles.put(Handle.RESIZE_NORTH, new Vec4i(boundedCenter.x - size, activeScreenTopLeft.y - size, size, size));
+		handles.put(Handle.STRETCH_NORTH, new Vec4i(boundedCenter.x, activeScreenTopLeft.y - size, size, size));
+		handles.put(Handle.RESIZE_SOUTH, new Vec4i(boundedCenter.x - size, activeScreenBotRight.y, size, size));
+		handles.put(Handle.RESIZE_SOUTH, new Vec4i(boundedCenter.x - size, activeScreenBotRight.y, size, size));
+		handles.put(Handle.STRETCH_SOUTH, new Vec4i(boundedCenter.x, activeScreenBotRight.y, size, size));
+		
+		handles.put(Handle.RESIZE_EAST, new Vec4i(activeScreenBotRight.x, boundedCenter.y - size, size, size));
+		handles.put(Handle.STRETCH_EAST, new Vec4i(activeScreenBotRight.x, boundedCenter.y, size, size));
+		handles.put(Handle.RESIZE_WEST, new Vec4i(activeScreenTopLeft.x - size, boundedCenter.y - size, size, size));
+		handles.put(Handle.STRETCH_WEST, new Vec4i(activeScreenTopLeft.x - size, boundedCenter.y, size, size));
 	}
 	
 	private void updateCursor(Vec2i mousePos) {
@@ -587,10 +657,10 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 		}
 	}
 	private Handle isMouseInHandle(Vec2i mousePos) {
-		for(Entry<Handle, Vec2i> entry : handles.entrySet()) {
-			Vec2i pos = entry.getValue();
+		for(Entry<Handle, Vec4i> entry : handles.entrySet()) {
+			Vec4i pos = entry.getValue();
 			Handle handle = entry.getKey();
-			if(mousePos.distanceTo(pos) <= radius) {
+			if (pos.contains(mousePos)) {
 				return handle;
 			}
 		}
@@ -724,11 +794,12 @@ public class ImagePanel extends JPanel implements LayersListener, ComponentListe
 			g.setColor(Color.DARK_GRAY);
 //			g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 //			g2d.setStroke(KUI.dashed);
-			for(Entry<Handle, Vec2i> entry : handles.entrySet()) {
-				Vec2i pos = entry.getValue();
+			for(Entry<Handle, Vec4i> entry : handles.entrySet()) {
+				Vec4i pos = entry.getValue();
 				Handle handle = entry.getKey();
-				g.fillOval(pos.x - radius, pos.y - radius, radius*2, radius*2);
-				g.drawImage(handle.image, pos.x - radius, pos.y - radius, radius*2, radius*2, null);
+//				g.fillOval(pos.x - radius, pos.y - radius, radius*2, radius*2);
+				g.fillRect(pos.x, pos.y, pos.w, pos.h);
+				g.drawImage(handle.image, pos.x, pos.y, pos.w, pos.h, null);
 			}
 		}
 	}

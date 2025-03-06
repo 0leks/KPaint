@@ -13,7 +13,7 @@ import ok.kui.*;
 
 public class GUIPanel extends JPanel {
 	
-	public static final boolean EXTRACT_MODE_ALLOWED = false;
+	public static final boolean EXTRACT_MODE_ALLOWED = true;
 
 	private ControllerInterface controllerInterface;
 	private ImagePanelInterface imagePanelInterface;
@@ -28,6 +28,7 @@ public class GUIPanel extends JPanel {
 //	private KButton applyButton;
 	private JToggleButton toggleTiling;
 	private JToggleButton toggleDarkMode;
+	private JToggleButton toggleRightMouseDraw;
 	private KSlider brushSize2;
 	private JButton brushColor1;
 	private JButton brushColor2;
@@ -161,6 +162,13 @@ public class GUIPanel extends JPanel {
 		toggleDarkMode.setSelected(true);
 		imagePanelInterface.enableDarkMode(true);
 		
+		toggleRightMouseDraw = KUI.setupKToggleButton(withTitles ? "Right Mouse Draw" : "", "Toggles drawing vs dragging with right mouse button", "/rightmouse.png");
+		toggleRightMouseDraw.addActionListener(e -> {
+			imagePanelInterface.enableRightMouseDraw(toggleRightMouseDraw.isSelected());
+		});
+		toggleRightMouseDraw.setSelected(false);
+		imagePanelInterface.enableRightMouseDraw(false);
+		
 		brushSize2 = new KSlider(1, 20);
 		brushSize2.setValue(Brush.DEFAULT_BRUSH.getSize());
 		brushSize2.addChangeListener(e -> {
@@ -264,30 +272,26 @@ public class GUIPanel extends JPanel {
 		c.gridx = 0; c.gridy = row++; c.weighty = 1;
 		this.add(getSeparator(sepHeight, sepColor), c);
 		c.weighty = 0;
-		if(EXTRACT_MODE_ALLOWED) {
-			c.gridx = 0; c.gridy = row++;
-			this.add(modeButtons.get(BrushMode.EXTRACT), c);
-		}
+		c.gridwidth = 1;
+		c.gridx = 0; c.gridy = row;
+		this.add(toggleRightMouseDraw, c);
+
+		// ############ ROW 2.5 ################## 
+		c.gridx = 0; c.gridy = row++; c.weighty = 1;
+		c.weighty = 0;
 		c.gridwidth = 1;
 		c.gridx = 0; c.gridy = row;
 		this.add(toggleTiling, c);
 		c.gridx = 1; c.gridy = row++;
 		this.add(toggleDarkMode, c);
 		c.gridwidth = 2;
+
 		
-		// ############ ROW 3 ################## 
 		c.gridx = 0; c.gridy = row++; c.weighty = 1;
 		this.add(getSeparator(sepHeight, sepColor), c);
 		c.weighty = 0;
-//		c.gridx = 0; c.gridy = row++;
-//		this.add(modeButtons.get(BrushMode.MOVE), c);
-		c.gridx = 0; c.gridy = row++;
-		this.add(modeButtons.get(BrushMode.BRUSH), c);
-		c.gridx = 0; c.gridy = row++;
-		this.add(modeButtons.get(BrushMode.FILL), c);
-		c.gridx = 0; c.gridy = row++;
-		this.add(modeButtons.get(BrushMode.ALL_MATCHING_COLOR), c);
-
+		
+		
 		// ############ ROW 4 ################## 
 		c.gridx = 0; c.gridy = row++;
 		this.add(brushSize2, c);
@@ -308,6 +312,26 @@ public class GUIPanel extends JPanel {
 		c.gridwidth = 2;
 		c.gridx = 0; c.gridy = row++;
 		this.add(swatchesPanel, c);
+
+		
+		c.gridx = 0; c.gridy = row++; c.weighty = 1;
+		this.add(getSeparator(sepHeight, sepColor), c);
+		c.weighty = 0;
+		
+		// ############ ROW 3 ################## 
+//		c.gridx = 0; c.gridy = row++;
+//		this.add(modeButtons.get(BrushMode.MOVE), c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.BRUSH), c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.FILL), c);
+		c.gridx = 0; c.gridy = row++;
+		this.add(modeButtons.get(BrushMode.ALL_MATCHING_COLOR), c);
+		if(EXTRACT_MODE_ALLOWED) {
+			c.gridx = 0; c.gridy = row++;
+			this.add(modeButtons.get(BrushMode.EXTRACT), c);
+		}
+
 		
 		// ############ ROW 6 ################## 
 		c.gridx = 0; c.gridy = row++; c.weighty = 1;
